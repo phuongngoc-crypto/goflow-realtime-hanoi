@@ -14,7 +14,119 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          home_address: string
+          home_lat: number
+          home_lng: number
+          id: string
+          transport: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          home_address?: string
+          home_lat?: number
+          home_lng?: number
+          id: string
+          transport?: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          home_address?: string
+          home_lat?: number
+          home_lng?: number
+          id?: string
+          transport?: string
+        }
+        Relationships: []
+      }
+      schedule_items: {
+        Row: {
+          created_at: string
+          dest_lat: number | null
+          dest_lng: number | null
+          end_time: string
+          id: string
+          kind: string
+          location: string | null
+          start_time: string
+          title: string
+          user_id: string
+          weekday: number
+        }
+        Insert: {
+          created_at?: string
+          dest_lat?: number | null
+          dest_lng?: number | null
+          end_time: string
+          id?: string
+          kind?: string
+          location?: string | null
+          start_time: string
+          title: string
+          user_id: string
+          weekday: number
+        }
+        Update: {
+          created_at?: string
+          dest_lat?: number | null
+          dest_lng?: number | null
+          end_time?: string
+          id?: string
+          kind?: string
+          location?: string | null
+          start_time?: string
+          title?: string
+          user_id?: string
+          weekday?: number
+        }
+        Relationships: []
+      }
+      trip_feedback: {
+        Row: {
+          created_at: string
+          id: string
+          outcome: string | null
+          rating: number | null
+          schedule_item_id: string | null
+          trip_date: string
+          trip_label: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          outcome?: string | null
+          rating?: number | null
+          schedule_item_id?: string | null
+          trip_date?: string
+          trip_label: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          outcome?: string | null
+          rating?: number | null
+          schedule_item_id?: string | null
+          trip_date?: string
+          trip_label?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_feedback_schedule_item_id_fkey"
+            columns: ["schedule_item_id"]
+            isOneToOne: false
+            referencedRelation: "schedule_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
