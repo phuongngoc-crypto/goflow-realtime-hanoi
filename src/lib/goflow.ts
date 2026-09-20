@@ -66,7 +66,7 @@ export const TRANSPORTS: Transport[] = [
 ];
 
 export function getTransport(id: TransportId): Transport {
-  return TRANSPORTS.find((t) => t.id === id) ?? TRANSPORTS[0];
+  return TRANSPORTS.find((t) => t.id === id) ?? TRANSPORTS[0]!;
 }
 
 export type Suggestion = {
@@ -182,8 +182,8 @@ export type ScheduleItem = {
 };
 
 export function toMinutes(hhmm: string): number {
-  const [h, m] = hhmm.slice(0, 5).split(":").map(Number);
-  return h * 60 + (m || 0);
+  const parts = hhmm.slice(0, 5).split(":").map(Number);
+  return (parts[0] || 0) * 60 + (parts[1] || 0);
 }
 
 export function fmtTime(totalMinutes: number): string {
