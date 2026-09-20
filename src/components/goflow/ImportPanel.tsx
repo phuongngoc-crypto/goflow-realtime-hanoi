@@ -101,7 +101,7 @@ export default function ImportPanel({
         defval: "",
       });
       const items: NewItem[] = rows
-        .map((row) => {
+        .map((row): NewItem | null => {
           const title = String(pick(row, ["mon", "tên", "ten", "title", "subject"]) ?? "").trim();
           if (!title) return null;
           const kindRaw = String(pick(row, ["loai", "loại", "kind", "type"]) ?? "").toLowerCase();
