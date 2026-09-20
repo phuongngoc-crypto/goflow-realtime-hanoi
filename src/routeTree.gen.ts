@@ -10,33 +10,53 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DangNhapRouteImport } from './routes/dang-nhap'
+import { Route as LichTrinhRouteImport } from './routes/lich-trinh'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DangNhapRoute = DangNhapRouteImport.update({
+  id: '/dang-nhap',
+  path: '/dang-nhap',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LichTrinhRoute = LichTrinhRouteImport.update({
+  id: '/lich-trinh',
+  path: '/lich-trinh',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/dang-nhap': typeof DangNhapRoute
+  '/lich-trinh': typeof LichTrinhRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/dang-nhap': typeof DangNhapRoute
+  '/lich-trinh': typeof LichTrinhRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/dang-nhap': typeof DangNhapRoute
+  '/lich-trinh': typeof LichTrinhRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/dang-nhap' | '/lich-trinh'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/dang-nhap' | '/lich-trinh'
+  id: '__root__' | '/' | '/dang-nhap' | '/lich-trinh'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DangNhapRoute: typeof DangNhapRoute
+  LichTrinhRoute: typeof LichTrinhRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +68,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dang-nhap': {
+      id: '/dang-nhap'
+      path: '/dang-nhap'
+      fullPath: '/dang-nhap'
+      preLoaderRoute: typeof DangNhapRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lich-trinh': {
+      id: '/lich-trinh'
+      path: '/lich-trinh'
+      fullPath: '/lich-trinh'
+      preLoaderRoute: typeof LichTrinhRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DangNhapRoute: DangNhapRoute,
+  LichTrinhRoute: LichTrinhRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -8,27 +8,27 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
+import { CalendarRange, LogOut, Route as RouteIcon, Sparkles, UserRound } from "lucide-react";
+import { Toaster } from "@/components/ui/sonner";
+import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import { useSession } from "@/hooks/useSession";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 
 function NotFoundComponent() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
-        <h1 className="text-7xl font-bold text-foreground">404</h1>
-        <h2 className="mt-4 text-xl font-semibold text-foreground">Page not found</h2>
+    <div className="flex min-h-screen items-center justify-center px-4">
+      <div className="glass-card max-w-md p-8 text-center">
+        <h1 className="text-6xl font-extrabold brand-gradient-text">404</h1>
+        <h2 className="mt-3 text-xl font-bold">Không tìm thấy trang</h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          The page you're looking for doesn't exist or has been moved.
+          Trang bạn tìm không tồn tại hoặc đã được chuyển đi.
         </p>
-        <div className="mt-6">
-          <Link
-            to="/"
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-          >
-            Go home
-          </Link>
-        </div>
+        <Button asChild className="mt-6 rounded-2xl font-bold">
+          <Link to="/">Về trang chủ</Link>
+        </Button>
       </div>
     </div>
   );
@@ -42,30 +42,25 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   }, [error]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          This page didn't load
-        </h1>
+    <div className="flex min-h-screen items-center justify-center px-4">
+      <div className="glass-card max-w-md p-8 text-center">
+        <h1 className="text-xl font-bold">Trang chưa tải được</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Something went wrong on our end. You can try refreshing or head back home.
+          Có lỗi xảy ra. Bạn thử tải lại hoặc quay về trang chủ nhé.
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
-          <button
+          <Button
+            className="rounded-2xl font-bold"
             onClick={() => {
               router.invalidate();
               reset();
             }}
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            Try again
-          </button>
-          <a
-            href="/"
-            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
-          >
-            Go home
-          </a>
+            Thử lại
+          </Button>
+          <Button asChild variant="secondary" className="rounded-2xl font-bold">
+            <a href="/">Về trang chủ</a>
+          </Button>
         </div>
       </div>
     </div>
@@ -77,19 +72,22 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "GoFlow - Nhắc bạn đúng hẹn" },
+      {
+        name: "description",
+        content:
+          "GoFlow theo dõi kẹt xe Hà Nội thời gian thực và nhắc bạn giờ vàng xuất phát để luôn đúng hẹn.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
+      { rel: "stylesheet", href: appCss },
+      { rel: "preconnect", href: "https://fonts.googleapis.com" },
+      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: appCss,
+        href: "https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap",
       },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
     ],
@@ -102,7 +100,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="vi">
       <head>
         <HeadContent />
       </head>
@@ -114,13 +112,106 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+function Navbar() {
+  const { user } = useSession();
+  const router = useRouter();
+
+  async function signOut() {
+    await supabase.auth.signOut();
+    router.invalidate();
+  }
+
+  return (
+    <header className="sticky top-0 z-[800] border-b border-border bg-primary text-primary-foreground shadow-soft">
+      <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3">
+        <Link to="/" className="flex items-center gap-2 font-extrabold">
+          <span className="grid size-9 place-items-center rounded-2xl bg-primary-foreground/15">
+            <RouteIcon className="size-5" />
+          </span>
+          <span className="leading-tight">
+            <span className="block text-base">GoFlow</span>
+            <span className="block text-[10px] font-bold opacity-80">Nhắc bạn đúng hẹn</span>
+          </span>
+        </Link>
+
+        <nav className="ml-2 hidden items-center gap-1 sm:flex">
+          <Link
+            to="/"
+            activeOptions={{ exact: true }}
+            className="rounded-2xl px-3 py-2 text-sm font-bold opacity-80 transition hover:bg-primary-foreground/15"
+            activeProps={{ className: "bg-primary-foreground/20 opacity-100" }}
+          >
+            Hành trình
+          </Link>
+          <Link
+            to="/lich-trinh"
+            className="rounded-2xl px-3 py-2 text-sm font-bold opacity-80 transition hover:bg-primary-foreground/15"
+            activeProps={{ className: "bg-primary-foreground/20 opacity-100" }}
+          >
+            Lịch trình
+          </Link>
+        </nav>
+
+        <div className="ml-auto flex items-center gap-2">
+          <Link
+            to="/lich-trinh"
+            className="rounded-2xl p-2 sm:hidden"
+            aria-label="Lịch trình"
+          >
+            <CalendarRange className="size-5" />
+          </Link>
+          {user ? (
+            <>
+              <span className="hidden max-w-[160px] truncate rounded-2xl bg-primary-foreground/15 px-3 py-2 text-xs font-bold md:block">
+                <UserRound className="mr-1 inline size-3.5" />
+                {user.email}
+              </span>
+              <Button
+                onClick={() => void signOut()}
+                variant="secondary"
+                className="h-10 rounded-2xl font-bold"
+              >
+                <LogOut className="size-4" />
+                <span className="hidden sm:inline">Đăng xuất</span>
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button asChild variant="secondary" className="h-10 rounded-2xl font-bold">
+                <Link to="/dang-nhap">Đăng nhập / Đăng ký</Link>
+              </Button>
+              <Button
+                asChild
+                variant="outline"
+                className="hidden h-10 rounded-2xl border-primary-foreground/40 bg-transparent font-bold text-primary-foreground hover:bg-primary-foreground/15 hover:text-primary-foreground sm:flex"
+              >
+                <Link to="/dang-nhap" search={{ demo: "1" }}>
+                  <Sparkles className="size-4" />
+                  Demo 1-click
+                </Link>
+              </Button>
+            </>
+          )}
+        </div>
+      </div>
+    </header>
+  );
+}
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      <div className="min-h-screen">
+        <Navbar />
+        {/* Required: nested routes render here. */}
+        <Outlet />
+        <footer className="mx-auto max-w-6xl px-4 py-10 text-center text-xs font-semibold text-muted-foreground">
+          GoFlow • Dữ liệu giao thông thời gian thực tại Hà Nội
+        </footer>
+      </div>
+      <Toaster position="top-center" />
     </QueryClientProvider>
   );
 }
