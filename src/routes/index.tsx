@@ -86,6 +86,52 @@ function Dashboard() {
 
   const next = useMemo(() => findNextItem(items, now), [items, now]);
 
+  const schedulePlaces = useMemo(() => {
+    const map = new Map<
+      string,
+      { key: string; title: string; address: string; lat: number | null; lng: number | null }
+    >();
+    for (const item of items) {
+      const address = item.location?.trim();
+      if (!address) continue;
+      if (!map.has(address)) {
+        map.set(address, {
+          key: address,
+          title: item.title,
+          address,
+          lat: item.dest_lat,
+          lng: item.dest_lng,
+        });
+      }
+    }
+    return [...map.values()];
+  }, [items]);
+
+  async function pickSchedulePlace(place: (typeof schedulePlaces)[number]) {
+    if (place.lat !== null && place.lng !== null) {
+      setDestOverride({ address: place.address, lat: place.lat, lng: place.lng });
+      setDestText(place.address);
+      setFocus({ lat: place.lat, lng: place.lng, nonce: Date.now() });
+      return;
+    }
+    setPicking(place.key);
+    try {
+      const results = await searchAddress(place.address, 1);
+      const found = results[0];
+      if (!found) {
+        toast.error("Không tìm thấy toạ độ của điểm hẹn này");
+        return;
+      }
+      setDestOverride({ address: place.address, lat: found.lat, lng: found.lng });
+      setDestText(place.address);
+      setFocus({ lat: found.lat, lng: found.lng, nonce: Date.now() });
+    } catch {
+      toast.error("Không tra được toạ độ, hãy thử nhập thủ công");
+    } finally {
+      setPicking(null);
+    }
+  }
+
   const dest = useMemo(() => {
     if (destOverride) return destOverride;
     if (next?.item.dest_lat && next.item.dest_lng) {
@@ -168,8 +214,47 @@ function Dashboard() {
                 setFocus({ lat: place.lat, lng: place.lng, nonce: Date.now() });
               }}
             />
+            <div className="space-y-2">
+              <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                Điểm hẹn từ lịch trình
+              </p>
+              {schedulePlaces.length === 0 ? (
+                <p className="text-[11px] font-semibold text-muted-foreground">
+                  Chưa có điểm hẹn nào trong lịch trình của bạn.
+                </p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {schedulePlaces.map((place) => {
+                    const active = dest.address === place.address;
+                    return (
+                      <button
+                        key={place.key}
+                        type="button"
+                        disabled={picking === place.key}
+                        onClick={() => void pickSchedulePlace(place)}
+                        className={`flex max-w-full items-center gap-1.5 rounded-2xl border-2 px-3 py-2 text-left text-xs font-extrabold transition ${
+                          active
+                            ? "border-primary bg-primary/12 text-primary"
+                            : "border-border bg-secondary/40 text-foreground hover:border-primary/40"
+                        }`}
+                      >
+                        {picking === place.key ? (
+                          <Loader2 className="size-3.5 shrink-0 animate-spin" />
+                        ) : (
+                          <MapPin className="size-3.5 shrink-0" />
+                        )}
+                        <span className="truncate">
+                          {place.title} — {place.address}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
             <AddressSearch
-              label="Điểm hẹn (tuỳ chọn)"
+              label="Thêm điểm hẹn khác"
               value={destText}
               placeholder={dest.address}
               onTextChange={setDestText}
