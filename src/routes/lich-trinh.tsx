@@ -30,7 +30,7 @@ export const Route = createFileRoute("/lich-trinh")({
 });
 
 function SchedulePage() {
-  const { items, loading, addSchedule, replaceSchedule, removeScheduleItem, user } =
+  const { items, loading, addSchedule, replaceSchedule, removeScheduleItem } =
     useGoflowData();
   const [form, setForm] = useState({
     title: "",
@@ -61,18 +61,12 @@ function SchedulePage() {
 
   return (
     <main className="mx-auto max-w-6xl space-y-5 px-4 py-6">
-      <section className="glass-card p-5">
-        <h1 className="text-xl font-extrabold brand-gradient-text sm:text-2xl">
-          Lịch trình tuần của bạn
-        </h1>
-        <p className="mt-1 text-sm font-semibold text-muted-foreground">
-          Bảng ma trận thời gian 07:00 – 21:00, mỗi ca là một khối màu đúng theo độ dài khung giờ.
-          {!user && " Đăng nhập để lưu lịch riêng của bạn."}
-        </p>
+      <section className="rounded-3xl bg-primary p-5 text-primary-foreground">
+        <h1 className="text-xl font-black sm:text-2xl">Lịch trình tuần này</h1>
       </section>
 
       <section className="glass-card p-5">
-        <h2 className="mb-3 text-base font-extrabold">Nạp lịch đa định dạng</h2>
+        <h2 className="mb-3 text-lg font-black">Tải lên thời khóa biểu trong tuần của bạn</h2>
         <ImportPanel
           onImport={async (newItems, mode) => {
             if (mode === "replace") await replaceSchedule(newItems);
