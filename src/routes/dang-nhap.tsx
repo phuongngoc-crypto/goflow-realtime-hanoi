@@ -8,7 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-const searchSchema = z.object({ demo: z.string().optional() });
+const searchSchema = z.object({
+  demo: z.union([z.string(), z.number()]).optional().transform((v) => (v === undefined ? undefined : String(v))),
+});
 
 export const Route = createFileRoute("/dang-nhap")({
   validateSearch: (search) => searchSchema.parse(search),
