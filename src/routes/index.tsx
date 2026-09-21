@@ -168,8 +168,47 @@ function Dashboard() {
                 setFocus({ lat: place.lat, lng: place.lng, nonce: Date.now() });
               }}
             />
+            <div className="space-y-2">
+              <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                Điểm hẹn từ lịch trình
+              </p>
+              {schedulePlaces.length === 0 ? (
+                <p className="text-[11px] font-semibold text-muted-foreground">
+                  Chưa có điểm hẹn nào trong lịch trình của bạn.
+                </p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {schedulePlaces.map((place) => {
+                    const active = dest.address === place.address;
+                    return (
+                      <button
+                        key={place.key}
+                        type="button"
+                        disabled={picking === place.key}
+                        onClick={() => void pickSchedulePlace(place)}
+                        className={`flex max-w-full items-center gap-1.5 rounded-2xl border-2 px-3 py-2 text-left text-xs font-extrabold transition ${
+                          active
+                            ? "border-primary bg-primary/12 text-primary"
+                            : "border-border bg-secondary/40 text-foreground hover:border-primary/40"
+                        }`}
+                      >
+                        {picking === place.key ? (
+                          <Loader2 className="size-3.5 shrink-0 animate-spin" />
+                        ) : (
+                          <MapPin className="size-3.5 shrink-0" />
+                        )}
+                        <span className="truncate">
+                          {place.title} — {place.address}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
             <AddressSearch
-              label="Điểm hẹn (tuỳ chọn)"
+              label="Thêm điểm hẹn khác"
               value={destText}
               placeholder={dest.address}
               onTextChange={setDestText}
