@@ -27,11 +27,12 @@ export default function AddressSearch({
   const [busy, setBusy] = useState(false);
   const [gpsBusy, setGpsBusy] = useState(false);
   const boxRef = useRef<HTMLDivElement | null>(null);
-  const skipNext = useRef(false);
+  const skipNext = useRef(true);
 
   useEffect(() => {
     if (skipNext.current) {
       skipNext.current = false;
+      setOpen(false);
       return;
     }
     const q = value.trim();
