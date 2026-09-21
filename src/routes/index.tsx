@@ -41,6 +41,16 @@ export const Route = createFileRoute("/")({
   component: Dashboard,
 });
 
+function formatCountdown(minutes: number): string {
+  const m = Math.max(0, minutes);
+  if (m < 60) return `${m} phút`;
+  const days = Math.floor(m / 1440);
+  const hours = Math.floor((m % 1440) / 60);
+  const mins = m % 60;
+  if (days > 0) return `${days} ngày ${hours} giờ`;
+  return `${hours} giờ ${mins} phút`;
+}
+
 function Dashboard() {
   const {
     home,
