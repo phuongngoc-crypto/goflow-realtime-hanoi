@@ -41,6 +41,16 @@ export const Route = createFileRoute("/")({
   component: Dashboard,
 });
 
+function formatCountdown(minutes: number): string {
+  const m = Math.max(0, minutes);
+  if (m < 60) return `${m} phút`;
+  const days = Math.floor(m / 1440);
+  const hours = Math.floor((m % 1440) / 60);
+  const mins = m % 60;
+  if (days > 0) return `${days} ngày ${hours} giờ`;
+  return `${hours} giờ ${mins} phút`;
+}
+
 function Dashboard() {
   const {
     home,
@@ -245,12 +255,13 @@ function Dashboard() {
                     Bạn cần xuất phát sau:
                   </p>
                   <p className="mt-1 text-4xl font-extrabold brand-gradient-text">
-                    {minutesLeft > 0 ? minutesLeft : 0} phút
+                    {formatCountdown(minutesLeft)}
                   </p>
                   <p className="mt-1 text-sm font-bold text-secondary-foreground">
                     <Clock className="mr-1 inline size-4" />
                     Bước chân ra khỏi nhà lúc{" "}
-                    {fmtTime(departAt.getHours() * 60 + departAt.getMinutes())}
+                    {fmtTime(departAt.getHours() * 60 + departAt.getMinutes())} (
+                    {WEEKDAYS[departAt.getDay() === 0 ? 6 : departAt.getDay() - 1]})
                     {minutesLeft <= 0 && " — đi ngay nhé!"}
                   </p>
                   <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs font-bold">

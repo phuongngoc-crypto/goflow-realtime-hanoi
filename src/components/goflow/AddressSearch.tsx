@@ -27,11 +27,12 @@ export default function AddressSearch({
   const [busy, setBusy] = useState(false);
   const [gpsBusy, setGpsBusy] = useState(false);
   const boxRef = useRef<HTMLDivElement | null>(null);
-  const skipNext = useRef(false);
+  const typed = useRef(false);
 
   useEffect(() => {
-    if (skipNext.current) {
-      skipNext.current = false;
+    if (!typed.current) {
+      setOpen(false);
+      setSuggestions([]);
       return;
     }
     const q = value.trim();
@@ -64,7 +65,7 @@ export default function AddressSearch({
   }, []);
 
   function choose(s: Suggestion) {
-    skipNext.current = true;
+    typed.current = false;
     onTextChange(s.address);
     onPick({ address: s.address, lat: s.lat, lng: s.lng });
     setOpen(false);
@@ -81,12 +82,12 @@ export default function AddressSearch({
         const { latitude, longitude } = pos.coords;
         try {
           const address = await reverseGeocode(latitude, longitude);
-          skipNext.current = true;
+          typed.current = false;
           onTextChange(address);
           onPick({ address, lat: latitude, lng: longitude });
           toast.success("Đã lấy vị trí hiện tại của bạn");
         } catch {
-          skipNext.current = true;
+          typed.current = false;
           const fallback = `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
           onTextChange(fallback);
           onPick({ address: fallback, lat: latitude, lng: longitude });
@@ -112,7 +113,10 @@ export default function AddressSearch({
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-primary" />
           <Input
             value={value}
-            onChange={(e) => onTextChange(e.target.value)}
+            onChange={(e) => {
+              typed.current = true;
+              onTextChange(e.target.value);
+            }}
             onFocus={() => suggestions.length > 0 && setOpen(true)}
             placeholder={placeholder ?? "Nhập số nhà, ngõ, ngách, tên đường..."}
             className="h-12 rounded-2xl border-border bg-secondary/40 pl-9 pr-9 text-sm font-semibold"
