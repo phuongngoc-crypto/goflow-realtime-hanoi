@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Camera, Download, FileSpreadsheet, Loader2, Sparkles } from "lucide-react";
+import { Camera, Download, FileSpreadsheet, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { extractScheduleFromImage } from "@/lib/schedule-ocr.functions";
 import { Button } from "@/components/ui/button";
@@ -188,10 +188,6 @@ export default function ImportPanel({
           <Camera className="size-5" />
         )}
         <span>{scanning ? "Đang đọc ảnh..." : "Quét ảnh TKB"}</span>
-        <span className="text-[11px] font-semibold opacity-80">
-          <Sparkles className="mr-1 inline size-3" />
-          Tự động bóc tách
-        </span>
       </Button>
 
       <Button
@@ -218,7 +214,6 @@ export default function ImportPanel({
       >
         <Download className="size-5" />
         <span>Tải file mẫu</span>
-        <span className="text-[11px] font-semibold opacity-80">Đúng chuẩn cột</span>
       </Button>
     </div>
   );
