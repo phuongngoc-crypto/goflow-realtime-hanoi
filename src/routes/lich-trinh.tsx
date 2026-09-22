@@ -4,6 +4,13 @@ import { CalendarPlus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import ScheduleGrid from "@/components/goflow/ScheduleGrid";
 import ImportPanel from "@/components/goflow/ImportPanel";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -88,7 +95,11 @@ function SchedulePage() {
             <Loader2 className="size-4 animate-spin" /> Đang tải lịch trình...
           </div>
         ) : (
-          <ScheduleGrid items={items} onRemove={(id) => void removeScheduleItem(id)} />
+          <ScheduleGrid
+            items={items}
+            onRemove={(id) => void removeScheduleItem(id)}
+            onEdit={(item) => setEditing(item)}
+          />
         )}
       </section>
 
