@@ -30,8 +30,15 @@ export const Route = createFileRoute("/lich-trinh")({
 });
 
 function SchedulePage() {
-  const { items, loading, addSchedule, replaceSchedule, removeScheduleItem } =
-    useGoflowData();
+  const {
+    items,
+    loading,
+    addSchedule,
+    replaceSchedule,
+    removeScheduleItem,
+    updateScheduleItem,
+  } = useGoflowData();
+  const [editing, setEditing] = useState<ScheduleItem | null>(null);
   const [form, setForm] = useState({
     title: "",
     kind: "study" as "study" | "work",
