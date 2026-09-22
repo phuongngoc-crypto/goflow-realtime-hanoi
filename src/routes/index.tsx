@@ -1,5 +1,5 @@
 import { Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { ClientOnly } from "@tanstack/react-router";
 import { AlarmClock, Clock, Loader2, MapPin, Star, TrafficCone } from "lucide-react";
 import { toast } from "sonner";
@@ -62,7 +62,6 @@ function Dashboard() {
     feedback,
     rateTrip,
     loading,
-    user,
   } = useGoflowData();
 
   const [homeText, setHomeText] = useState(home.address);
@@ -187,17 +186,6 @@ function Dashboard() {
         <h1 className="mt-2 text-2xl font-extrabold leading-tight brand-gradient-text sm:text-4xl">
           Tối ưu di chuyển, tận hưởng hành trình
         </h1>
-        <p className="mt-2 max-w-2xl text-sm font-semibold text-muted-foreground">
-          Đo lường kẹt xe Hà Nội theo thời gian thực, tính giờ vàng xuất phát cho từng phương tiện
-          và nhắc bạn bước chân ra khỏi nhà đúng lúc.
-        </p>
-        {!user && (
-          <Button asChild variant="secondary" className="mt-4 rounded-2xl font-bold">
-            <Link to="/dang-nhap" search={{ demo: "1" }}>
-              Dùng thử ngay bằng 1 click
-            </Link>
-          </Button>
-        )}
       </section>
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
