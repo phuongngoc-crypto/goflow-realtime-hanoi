@@ -13,9 +13,11 @@ const HOUR_HEIGHT = 58;
 export default function ScheduleGrid({
   items,
   onRemove,
+  onEdit,
 }: {
   items: ScheduleItem[];
   onRemove?: (id: string) => void;
+  onEdit?: (item: ScheduleItem) => void;
 }) {
   const hours = Array.from(
     { length: GRID_END_HOUR - GRID_START_HOUR + 1 },
