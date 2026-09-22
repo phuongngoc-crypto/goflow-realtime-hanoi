@@ -15,6 +15,7 @@ import {
   fmtTime,
   getTransport,
   isoWeekday,
+  searchAddress,
   type RouteResult,
   type TransportId,
 } from "@/lib/goflow";
@@ -72,6 +73,7 @@ function Dashboard() {
   const [route, setRoute] = useState<RouteResult | null>(null);
   const [calculating, setCalculating] = useState(false);
   const [focus, setFocus] = useState<{ lat: number; lng: number; nonce: number } | null>(null);
+  const [picking, setPicking] = useState<string | null>(null);
   const [now, setNow] = useState(() => new Date());
   const homeTouched = useRef(false);
 
