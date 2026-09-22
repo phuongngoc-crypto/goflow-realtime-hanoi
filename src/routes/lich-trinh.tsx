@@ -4,6 +4,13 @@ import { CalendarPlus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import ScheduleGrid from "@/components/goflow/ScheduleGrid";
 import ImportPanel from "@/components/goflow/ImportPanel";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,8 +37,15 @@ export const Route = createFileRoute("/lich-trinh")({
 });
 
 function SchedulePage() {
-  const { items, loading, addSchedule, replaceSchedule, removeScheduleItem } =
-    useGoflowData();
+  const {
+    items,
+    loading,
+    addSchedule,
+    replaceSchedule,
+    removeScheduleItem,
+    updateScheduleItem,
+  } = useGoflowData();
+  const [editing, setEditing] = useState<ScheduleItem | null>(null);
   const [form, setForm] = useState({
     title: "",
     kind: "study" as "study" | "work",
@@ -81,7 +95,11 @@ function SchedulePage() {
             <Loader2 className="size-4 animate-spin" /> Đang tải lịch trình...
           </div>
         ) : (
-          <ScheduleGrid items={items} onRemove={(id) => void removeScheduleItem(id)} />
+          <ScheduleGrid
+            items={items}
+            onRemove={(id) => void removeScheduleItem(id)}
+            onEdit={(item) => setEditing(item)}
+          />
         )}
       </section>
 
@@ -155,6 +173,114 @@ function SchedulePage() {
           </Button>
         </form>
       </section>
+
+      <Dialog open={!!editing} onOpenChange={(open) => !open && setEditing(null)}>
+        <DialogContent className="rounded-3xl">
+          <DialogHeader>
+            <DialogTitle className="font-black">Sửa ca trong lịch</DialogTitle>
+          </DialogHeader>
+          {editing && (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label className="text-xs font-bold uppercase">Tên môn / ca</Label>
+                <Input
+                  value={editing.title}
+                  onChange={(e) => setEditing({ ...editing, title: e.target.value })}
+                  className="h-11 rounded-2xl bg-secondary/40 font-semibold"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold uppercase">Loại</Label>
+                <select
+                  value={editing.kind}
+                  onChange={(e) =>
+                    setEditing({ ...editing, kind: e.target.value as "study" | "work" })
+                  }
+                  className="h-11 w-full rounded-2xl border border-border bg-secondary/40 px-3 text-sm font-semibold"
+                >
+                  <option value="study">Ca học</option>
+                  <option value="work">Ca làm thêm</option>
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold uppercase">Thứ</Label>
+                <select
+                  value={editing.weekday}
+                  onChange={(e) => setEditing({ ...editing, weekday: Number(e.target.value) })}
+                  className="h-11 w-full rounded-2xl border border-border bg-secondary/40 px-3 text-sm font-semibold"
+                >
+                  {WEEKDAYS.map((d, i) => (
+                    <option key={d} value={i + 1}>
+                      {d}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold uppercase">Bắt đầu</Label>
+                <Input
+                  type="time"
+                  value={editing.start_time}
+                  onChange={(e) => setEditing({ ...editing, start_time: e.target.value })}
+                  className="h-11 rounded-2xl bg-secondary/40 font-semibold"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold uppercase">Kết thúc</Label>
+                <Input
+                  type="time"
+                  value={editing.end_time}
+                  onChange={(e) => setEditing({ ...editing, end_time: e.target.value })}
+                  className="h-11 rounded-2xl bg-secondary/40 font-semibold"
+                />
+              </div>
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label className="text-xs font-bold uppercase">Địa điểm</Label>
+                <Input
+                  value={editing.location ?? ""}
+                  onChange={(e) => setEditing({ ...editing, location: e.target.value })}
+                  placeholder="Đại học Bách Khoa Hà Nội"
+                  className="h-11 rounded-2xl bg-secondary/40 font-semibold"
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter className="gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="h-11 rounded-2xl font-bold"
+              onClick={() => {
+                if (editing) void removeScheduleItem(editing.id);
+                setEditing(null);
+                toast.success("Đã xoá ca khỏi lịch");
+              }}
+            >
+              Xoá ca
+            </Button>
+            <Button
+              type="button"
+              className="h-11 rounded-2xl font-bold"
+              onClick={async () => {
+                if (!editing) return;
+                const current = editing;
+                setEditing(null);
+                await updateScheduleItem(current.id, {
+                  title: current.title.trim() || "Ca chưa đặt tên",
+                  kind: current.kind,
+                  weekday: current.weekday,
+                  start_time: current.start_time,
+                  end_time: current.end_time,
+                  location: current.location?.trim() ? current.location.trim() : null,
+                });
+                toast.success("Đã lưu thay đổi");
+              }}
+            >
+              Lưu thay đổi
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }

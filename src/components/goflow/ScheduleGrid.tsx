@@ -13,9 +13,11 @@ const HOUR_HEIGHT = 58;
 export default function ScheduleGrid({
   items,
   onRemove,
+  onEdit,
 }: {
   items: ScheduleItem[];
   onRemove?: (id: string) => void;
+  onEdit?: (item: ScheduleItem) => void;
 }) {
   const hours = Array.from(
     { length: GRID_END_HOUR - GRID_START_HOUR + 1 },
@@ -82,7 +84,13 @@ export default function ScheduleGrid({
                   return (
                     <div
                       key={item.id}
-                      className={`group absolute left-1 right-1 overflow-hidden rounded-xl border-2 px-1.5 py-1 text-[11px] leading-tight shadow-soft ${
+                      role={onEdit ? "button" : undefined}
+                      tabIndex={onEdit ? 0 : undefined}
+                      onClick={onEdit ? () => onEdit(item) : undefined}
+                      title={onEdit ? "Bấm để sửa ca này" : undefined}
+                      className={`group absolute left-1 right-1 overflow-hidden rounded-xl border-2 px-1.5 py-1 text-left text-[11px] leading-tight shadow-soft ${
+                        onEdit ? "cursor-pointer hover:brightness-95" : ""
+                      } ${
                         study
                           ? "border-primary bg-primary/15 text-primary"
                           : "border-accent-foreground bg-accent text-accent-foreground"
@@ -97,7 +105,10 @@ export default function ScheduleGrid({
                       {onRemove && (
                         <button
                           type="button"
-                          onClick={() => onRemove(item.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onRemove(item.id);
+                          }}
                           aria-label="Xoá ca"
                           className="absolute right-1 top-1 hidden rounded-full bg-card p-1 group-hover:block"
                         >
