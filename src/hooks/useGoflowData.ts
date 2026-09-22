@@ -1,12 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
-import {
-  DEFAULT_HOME,
-  DEFAULT_SCHEDULE,
-  type ScheduleItem,
-  type TransportId,
-} from "@/lib/goflow";
+import { DEFAULT_HOME, type ScheduleItem, type TransportId } from "@/lib/goflow";
 
 export type HomePlace = { address: string; lat: number; lng: number };
 
@@ -39,7 +34,7 @@ function writeLS(key: string, value: unknown) {
 }
 
 function seedItems(): ScheduleItem[] {
-  return DEFAULT_SCHEDULE.map((item, i) => ({ ...item, id: `seed-${i}` }));
+  return [];
 }
 
 export function useGoflowData() {
@@ -83,25 +78,13 @@ export function useGoflowData() {
       setHomeState(DEFAULT_HOME);
     }
 
-    let { data: rows } = await supabase
+    const { data: rows } = await supabase
       .from("schedule_items")
       .select("id, title, kind, weekday, start_time, end_time, location, dest_lat, dest_lng")
       .eq("user_id", uid)
       .order("weekday")
       .order("start_time");
 
-    if (!rows || rows.length === 0) {
-      await supabase
-        .from("schedule_items")
-        .insert(DEFAULT_SCHEDULE.map((item) => ({ ...item, user_id: uid })));
-      const retry = await supabase
-        .from("schedule_items")
-        .select("id, title, kind, weekday, start_time, end_time, location, dest_lat, dest_lng")
-        .eq("user_id", uid)
-        .order("weekday")
-        .order("start_time");
-      rows = retry.data;
-    }
 
     setItems(
       (rows ?? []).map((r) => ({
