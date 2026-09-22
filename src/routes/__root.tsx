@@ -208,7 +208,7 @@ function RootComponent() {
         {/* Required: nested routes render here. */}
         <Outlet />
         <footer className="mx-auto max-w-6xl px-4 py-10 text-center text-xs font-semibold text-muted-foreground">
-          GoFlow • Dữ liệu giao thông thời gian thực tại Hà Nội
+          Tối ưu di chuyển, tận hưởng hành trình
         </footer>
       </div>
       <Toaster position="top-center" />
