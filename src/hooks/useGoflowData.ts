@@ -192,6 +192,20 @@ export function useGoflowData() {
     [userId, items, loadCloud],
   );
 
+  const updateScheduleItem = useCallback(
+    async (id: string, patch: Partial<Omit<ScheduleItem, "id">>) => {
+      if (userId && !id.startsWith("local-") && !id.startsWith("seed-")) {
+        await supabase.from("schedule_items").update(patch).eq("id", id).eq("user_id", userId);
+        await loadCloud(userId);
+      } else {
+        const next = items.map((i) => (i.id === id ? { ...i, ...patch } : i));
+        setItems(next);
+        writeLS(LS_ITEMS, next);
+      }
+    },
+    [userId, items, loadCloud],
+  );
+
   const rateTrip = useCallback(
     async (payload: { label: string; rating: number; outcome: string; itemId?: string | null }) => {
       const today = new Date().toISOString().slice(0, 10);
@@ -245,6 +259,7 @@ export function useGoflowData() {
     replaceSchedule,
     addSchedule,
     removeScheduleItem,
+    updateScheduleItem,
     rateTrip,
   };
 }
