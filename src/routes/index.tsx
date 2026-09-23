@@ -179,13 +179,14 @@ function Dashboard() {
 
   return (
     <main className="mx-auto max-w-6xl space-y-5 px-4 py-6">
-      <section className="glass-card overflow-hidden p-6">
-        <p className="text-xs font-extrabold uppercase tracking-widest text-primary">
+      <section className="forest-panel overflow-hidden rounded-3xl p-6 sm:p-8">
+        <p className="text-xs font-extrabold uppercase tracking-widest text-accent">
           GoFlow - Nhắc bạn đúng hẹn
         </p>
-        <h1 className="mt-2 text-2xl font-extrabold leading-tight brand-gradient-text sm:text-4xl">
+        <h1 className="mt-2 text-2xl font-extrabold leading-tight text-primary-foreground sm:text-4xl">
           Tối ưu di chuyển, tận hưởng hành trình
         </h1>
+        <div className="mt-5 h-1.5 w-20 rounded-full bg-accent" />
       </section>
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
@@ -317,7 +318,7 @@ function Dashboard() {
               </p>
             </div>
 
-            <div className="rounded-3xl bg-secondary p-4">
+            <div className="rounded-3xl bg-secondary p-4 ring-1 ring-primary/10">
               {calculating ? (
                 <p className="flex items-center gap-2 text-sm font-bold text-secondary-foreground">
                   <Loader2 className="size-4 animate-spin" />
@@ -329,7 +330,7 @@ function Dashboard() {
                     <AlarmClock className="size-4" />
                     Bạn cần xuất phát sau:
                   </p>
-                  <p className="mt-1 text-4xl font-extrabold brand-gradient-text">
+                   <p className="mt-1 text-4xl font-extrabold text-primary">
                     {formatCountdown(minutesLeft)}
                   </p>
                   <p className="mt-1 text-sm font-bold text-secondary-foreground">
@@ -469,7 +470,13 @@ function Dashboard() {
           </section>
         </div>
 
-        <section className="glass-card overflow-hidden p-2">
+        <section className="forest-panel overflow-hidden rounded-3xl p-2">
+          <div className="flex items-center justify-between px-4 py-3">
+            <h2 className="text-sm font-extrabold text-primary-foreground">Giao thông Hà Nội thời gian thực</h2>
+            <span className="flex items-center gap-2 text-xs font-bold text-accent">
+              <span className="size-2 animate-pulse rounded-full bg-accent" /> Trực tiếp
+            </span>
+          </div>
           <div className="h-[420px] w-full lg:h-[calc(100vh-10rem)] lg:min-h-[560px]">
             <ClientOnly
               fallback={

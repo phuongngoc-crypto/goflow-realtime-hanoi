@@ -14,7 +14,7 @@ type Props = {
 function pin(color: string, emoji: string) {
   return L.divIcon({
     className: "",
-    html: `<div style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:999px;background:${color};box-shadow:0 6px 16px rgba(29,78,216,.35);border:3px solid #fff;font-size:16px">${emoji}</div>`,
+    html: `<div style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:999px;background:${color};box-shadow:0 6px 16px rgba(4,72,50,.35);border:3px solid #fff;font-size:16px">${emoji}</div>`,
     iconSize: [34, 34],
     iconAnchor: [17, 17],
   });
@@ -62,7 +62,7 @@ export default function MapPanel({ home, dest, points, focus, onPick }: Props) {
     if (!map) return;
     if (!homeMarker.current) {
       homeMarker.current = L.marker([home.lat, home.lng], {
-        icon: pin("#1D4ED8", "🏠"),
+        icon: pin("#087443", "🏠"),
       }).addTo(map);
     } else {
       homeMarker.current.setLatLng([home.lat, home.lng]);
@@ -80,7 +80,7 @@ export default function MapPanel({ home, dest, points, focus, onPick }: Props) {
     }
     if (!destMarker.current) {
       destMarker.current = L.marker([dest.lat, dest.lng], {
-        icon: pin("#BAE6FD", "🎯"),
+        icon: pin("#B7ED5C", "🎯"),
       }).addTo(map);
     } else {
       destMarker.current.setLatLng([dest.lat, dest.lng]);
@@ -95,7 +95,7 @@ export default function MapPanel({ home, dest, points, focus, onPick }: Props) {
     routeLine.current = null;
     if (points.length < 2) return;
     routeLine.current = L.polyline(points, {
-      color: "#1D4ED8",
+      color: "#087443",
       weight: 6,
       opacity: 0.9,
       lineJoin: "round",
