@@ -157,7 +157,7 @@ function Navbar() {
           </Link>
           {user ? (
             <>
-                className="hidden max-w-[160px] truncate rounded-2xl bg-primary-foreground/10 px-3 py-2 text-xs font-bold md:block">
+              <span className="hidden max-w-[160px] truncate rounded-2xl bg-primary-foreground/10 px-3 py-2 text-xs font-bold md:block">
                 <UserRound className="mr-1 inline size-3.5" />
                 {user.email}
               </span>
