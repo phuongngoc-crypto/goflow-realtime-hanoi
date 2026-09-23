@@ -8,11 +8,12 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
-import { CalendarRange, LogOut, Route as RouteIcon, Sparkles, UserRound } from "lucide-react";
+import { CalendarRange, LogOut, Sparkles, UserRound } from "lucide-react";
 import { Toaster } from "@/components/ui/sonner";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
+import goflowLogo from "@/assets/goflow-logo.png";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -122,31 +123,25 @@ function Navbar() {
   }
 
   return (
-    <header className="sticky top-0 z-[800] border-b border-border bg-primary text-primary-foreground shadow-soft">
+    <header className="sticky top-0 z-[800] border-b border-primary/30 bg-foreground text-primary-foreground shadow-soft">
       <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3">
-        <Link to="/" className="flex items-center gap-2 font-extrabold">
-          <span className="grid size-9 place-items-center rounded-2xl bg-primary-foreground/15">
-            <RouteIcon className="size-5" />
-          </span>
-          <span className="leading-tight">
-            <span className="block text-base">GoFlow</span>
-            <span className="block text-[10px] font-bold opacity-80">Nhắc bạn đúng hẹn</span>
-          </span>
+        <Link to="/" className="flex items-center font-extrabold">
+          <img src={goflowLogo} alt="GoFlow" className="h-11 w-auto max-w-[170px] object-contain" />
         </Link>
 
         <nav className="ml-2 hidden items-center gap-1 sm:flex">
           <Link
             to="/"
             activeOptions={{ exact: true }}
-            className="rounded-2xl px-3 py-2 text-sm font-bold opacity-80 transition hover:bg-primary-foreground/15"
-            activeProps={{ className: "bg-primary-foreground/20 opacity-100" }}
+            className="rounded-2xl px-3 py-2 text-sm font-bold opacity-80 transition hover:bg-primary-foreground/10"
+            activeProps={{ className: "bg-accent text-accent-foreground opacity-100" }}
           >
             Hành trình
           </Link>
           <Link
             to="/lich-trinh"
-            className="rounded-2xl px-3 py-2 text-sm font-bold opacity-80 transition hover:bg-primary-foreground/15"
-            activeProps={{ className: "bg-primary-foreground/20 opacity-100" }}
+            className="rounded-2xl px-3 py-2 text-sm font-bold opacity-80 transition hover:bg-primary-foreground/10"
+            activeProps={{ className: "bg-accent text-accent-foreground opacity-100" }}
           >
             Lịch trình
           </Link>
@@ -162,7 +157,7 @@ function Navbar() {
           </Link>
           {user ? (
             <>
-              <span className="hidden max-w-[160px] truncate rounded-2xl bg-primary-foreground/15 px-3 py-2 text-xs font-bold md:block">
+                className="hidden max-w-[160px] truncate rounded-2xl bg-primary-foreground/10 px-3 py-2 text-xs font-bold md:block">
                 <UserRound className="mr-1 inline size-3.5" />
                 {user.email}
               </span>
@@ -183,7 +178,7 @@ function Navbar() {
               <Button
                 asChild
                 variant="outline"
-                className="hidden h-10 rounded-2xl border-primary-foreground/40 bg-transparent font-bold text-primary-foreground hover:bg-primary-foreground/15 hover:text-primary-foreground sm:flex"
+                 className="hidden h-10 rounded-2xl border-primary-foreground/40 bg-transparent font-bold text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground sm:flex"
               >
                 <Link to="/dang-nhap" search={{ demo: "1" }}>
                   <Sparkles className="size-4" />
@@ -207,8 +202,8 @@ function RootComponent() {
         <Navbar />
         {/* Required: nested routes render here. */}
         <Outlet />
-        <footer className="mx-auto max-w-6xl px-4 py-10 text-center text-xs font-semibold text-muted-foreground">
-          Tối ưu di chuyển, tận hưởng hành trình
+        <footer className="mt-6 bg-foreground px-4 py-9 text-center text-xs font-bold text-primary-foreground/70">
+          <span className="text-accent">GoFlow</span> · Tối ưu di chuyển, tận hưởng hành trình
         </footer>
       </div>
       <Toaster position="top-center" />

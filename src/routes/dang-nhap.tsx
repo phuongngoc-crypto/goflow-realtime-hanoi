@@ -109,11 +109,11 @@ function AuthPage() {
 
   return (
     <main className="mx-auto flex max-w-md flex-col gap-4 px-4 py-10">
-      <div className="text-center">
-        <h1 className="text-2xl font-extrabold brand-gradient-text">
+      <div className="forest-panel rounded-3xl p-6 text-center">
+        <h1 className="text-2xl font-extrabold text-primary-foreground">
           GoFlow - Nhắc bạn đúng hẹn
         </h1>
-        <p className="mt-1 text-sm font-semibold text-muted-foreground">
+        <p className="mt-1 text-sm font-semibold text-accent">
           Tối ưu di chuyển, tận hưởng hành trình
         </p>
       </div>

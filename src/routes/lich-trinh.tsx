@@ -75,7 +75,8 @@ function SchedulePage() {
 
   return (
     <main className="mx-auto max-w-6xl space-y-5 px-4 py-6">
-      <section className="rounded-3xl bg-primary p-5 text-primary-foreground">
+      <section className="forest-panel rounded-3xl p-5 text-primary-foreground sm:p-7">
+        <p className="mb-2 text-xs font-black uppercase tracking-widest text-accent">GoFlow</p>
         <h1 className="text-xl font-black sm:text-2xl">Lịch trình tuần này</h1>
       </section>
 
