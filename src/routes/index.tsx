@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { ClientOnly } from "@tanstack/react-router";
 import { AlarmClock, Clock, Loader2, MapPin, Star, TrafficCone } from "lucide-react";
 import { toast } from "sonner";
+import { z } from "zod";
 import AddressSearch from "@/components/goflow/AddressSearch";
 import { Button } from "@/components/ui/button";
 import { useGoflowData } from "@/hooks/useGoflowData";
@@ -22,7 +23,15 @@ import {
 
 const MapPanel = lazy(() => import("@/components/goflow/MapPanel"));
 
+const dashboardSearchSchema = z.object({
+  itemId: z.string().optional(),
+  destAddress: z.string().optional(),
+  destLat: z.coerce.number().optional(),
+  destLng: z.coerce.number().optional(),
+});
+
 export const Route = createFileRoute("/")({
+  validateSearch: (search) => dashboardSearchSchema.parse(search),
   head: () => ({
     meta: [
       { title: "GoFlow - Nhắc bạn đúng hẹn | Kẹt xe Hà Nội thời gian thực" },
@@ -53,6 +62,7 @@ function formatCountdown(minutes: number): string {
 }
 
 function Dashboard() {
+  const search = Route.useSearch();
   const {
     home,
     setHome,
@@ -75,6 +85,20 @@ function Dashboard() {
   const [picking, setPicking] = useState<string | null>(null);
   const [now, setNow] = useState(() => new Date());
   const homeTouched = useRef(false);
+  const appliedSearch = useRef(false);
+
+  useEffect(() => {
+    if (
+      appliedSearch.current ||
+      search.destLat === undefined ||
+      search.destLng === undefined
+    ) return;
+    appliedSearch.current = true;
+    const address = search.destAddress ?? "Điểm hẹn từ lịch trình";
+    setDestText(address);
+    setDestOverride({ address, lat: search.destLat, lng: search.destLng });
+    setFocus({ lat: search.destLat, lng: search.destLng, nonce: Date.now() });
+  }, [search.destAddress, search.destLat, search.destLng]);
 
   useEffect(() => {
     if (!homeTouched.current) setHomeText(home.address);
@@ -86,6 +110,14 @@ function Dashboard() {
   }, []);
 
   const next = useMemo(() => findNextItem(items, now), [items, now]);
+  const selectedSchedule = useMemo(
+    () => (search.itemId ? items.find((item) => item.id === search.itemId) ?? null : null),
+    [items, search.itemId],
+  );
+  const activeTrip = useMemo(
+    () => (selectedSchedule ? findNextItem([selectedSchedule], now) : next),
+    [selectedSchedule, next, now],
+  );
 
   const schedulePlaces = useMemo(() => {
     const map = new Map<
@@ -135,15 +167,15 @@ function Dashboard() {
 
   const dest = useMemo(() => {
     if (destOverride) return destOverride;
-    if (next?.item.dest_lat && next.item.dest_lng) {
+    if (activeTrip?.item.dest_lat && activeTrip.item.dest_lng) {
       return {
-        address: next.item.location ?? next.item.title,
-        lat: next.item.dest_lat,
-        lng: next.item.dest_lng,
+        address: activeTrip.item.location ?? activeTrip.item.title,
+        lat: activeTrip.item.dest_lat,
+        lng: activeTrip.item.dest_lng,
       };
     }
     return DEFAULT_DEST;
-  }, [destOverride, next]);
+  }, [destOverride, activeTrip]);
 
   useEffect(() => {
     let cancelled = false;
@@ -166,8 +198,8 @@ function Dashboard() {
   const activeTransport = getTransport(transport);
   const totalMinutes = route ? route.minutes + activeTransport.buffer : null;
   const departAt =
-    next && totalMinutes !== null
-      ? new Date(next.startsAt.getTime() - totalMinutes * 60000)
+    activeTrip && totalMinutes !== null
+      ? new Date(activeTrip.startsAt.getTime() - totalMinutes * 60000)
       : null;
   const minutesLeft = departAt
     ? Math.round((departAt.getTime() - now.getTime()) / 60000)
@@ -265,14 +297,14 @@ function Dashboard() {
                 <h2 className="text-base font-extrabold">Ca sắp tới gần nhất</h2>
                 {loading ? (
                   <p className="mt-1 text-sm font-semibold text-muted-foreground">Đang tải...</p>
-                ) : next ? (
+                ) : activeTrip ? (
                   <p className="mt-1 text-sm font-bold">
-                    {next.item.title} •{" "}
+                    {activeTrip.item.title} •{" "}
                     <span className="text-primary">
-                      {WEEKDAYS[next.item.weekday - 1]} {next.item.start_time}
+                      {WEEKDAYS[activeTrip.item.weekday - 1]} {activeTrip.item.start_time}
                     </span>
                     <span className="block text-xs font-semibold text-muted-foreground">
-                      {next.item.location ?? dest.address}
+                      {activeTrip.item.location ?? dest.address}
                     </span>
                   </p>
                 ) : (
@@ -283,12 +315,12 @@ function Dashboard() {
               </div>
               <span
                 className={`rounded-2xl px-3 py-1 text-xs font-bold ${
-                  next?.item.kind === "work"
+                  activeTrip?.item.kind === "work"
                     ? "bg-accent text-accent-foreground"
                     : "bg-primary/15 text-primary"
                 }`}
               >
-                {next?.item.kind === "work" ? "Ca làm" : "Ca học"}
+                {activeTrip?.item.kind === "work" ? "Ca làm" : "Ca học"}
               </span>
             </div>
 
