@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
-import { CalendarPlus, Loader2 } from "lucide-react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { CalendarPlus, Clock3, Loader2, MapPin, Pencil, Route as RouteIcon } from "lucide-react";
 import { toast } from "sonner";
 import ScheduleGrid from "@/components/goflow/ScheduleGrid";
 import ImportPanel from "@/components/goflow/ImportPanel";
+import AddressSearch from "@/components/goflow/AddressSearch";
 import {
   Dialog,
   DialogContent,
@@ -15,7 +16,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useGoflowData } from "@/hooks/useGoflowData";
-import { WEEKDAYS, type ScheduleItem } from "@/lib/goflow";
+import {
+  WEEKDAYS,
+  calculateRoute,
+  getTransport,
+  searchAddress,
+  type RouteResult,
+  type ScheduleItem,
+} from "@/lib/goflow";
 
 export const Route = createFileRoute("/lich-trinh")({
   head: () => ({
@@ -37,15 +45,21 @@ export const Route = createFileRoute("/lich-trinh")({
 });
 
 function SchedulePage() {
+  const navigate = useNavigate();
   const {
+    home,
     items,
+    transport,
     loading,
     addSchedule,
     replaceSchedule,
     removeScheduleItem,
     updateScheduleItem,
   } = useGoflowData();
+  const [selected, setSelected] = useState<ScheduleItem | null>(null);
   const [editing, setEditing] = useState<ScheduleItem | null>(null);
+  const [tripOverview, setTripOverview] = useState<RouteResult | null>(null);
+  const [tripLoading, setTripLoading] = useState(false);
   const [form, setForm] = useState({
     title: "",
     kind: "study" as "study" | "work",
@@ -53,23 +67,69 @@ function SchedulePage() {
     start_time: "07:30",
     end_time: "09:10",
     location: "",
+    dest_lat: null as number | null,
+    dest_lng: null as number | null,
   });
+
+  async function resolveLocation<T extends Omit<ScheduleItem, "id">>(item: T): Promise<T> {
+    const location = item.location?.trim();
+    if (!location || (item.dest_lat !== null && item.dest_lng !== null)) return item;
+    try {
+      const found = (await searchAddress(location, 1))[0];
+      return found ? { ...item, dest_lat: found.lat, dest_lng: found.lng } : item;
+    } catch {
+      return item;
+    }
+  }
+
+  async function openTrip(item: ScheduleItem) {
+    setSelected(item);
+    setEditing(null);
+    setTripOverview(null);
+    if (!item.location) return;
+    setTripLoading(true);
+    try {
+      const resolved = await resolveLocation(item);
+      if (resolved.dest_lat === null || resolved.dest_lng === null) {
+        toast.error("Không tìm thấy tọa độ của địa điểm này");
+        return;
+      }
+      if (item.dest_lat === null || item.dest_lng === null) {
+        await updateScheduleItem(item.id, {
+          dest_lat: resolved.dest_lat,
+          dest_lng: resolved.dest_lng,
+        });
+      }
+      setSelected({ ...item, dest_lat: resolved.dest_lat, dest_lng: resolved.dest_lng });
+      setTripOverview(
+        await calculateRoute(
+          home,
+          { lat: resolved.dest_lat, lng: resolved.dest_lng },
+          getTransport(transport),
+        ),
+      );
+    } catch {
+      toast.error("Chưa thể tính tổng quan hành trình");
+    } finally {
+      setTripLoading(false);
+    }
+  }
 
   async function addManual(e: React.FormEvent) {
     e.preventDefault();
     if (!form.title.trim()) return;
-    const item: Omit<ScheduleItem, "id"> = {
+    const item = await resolveLocation<Omit<ScheduleItem, "id">>({
       title: form.title.trim(),
       kind: form.kind,
       weekday: form.weekday,
       start_time: form.start_time,
       end_time: form.end_time,
       location: form.location.trim() || null,
-      dest_lat: null,
-      dest_lng: null,
-    };
+      dest_lat: form.dest_lat,
+      dest_lng: form.dest_lng,
+    });
     await addSchedule([item]);
-    setForm({ ...form, title: "", location: "" });
+    setForm({ ...form, title: "", location: "", dest_lat: null, dest_lng: null });
     toast.success("Đã thêm vào lịch trình");
   }
 
@@ -84,8 +144,9 @@ function SchedulePage() {
         <h2 className="mb-3 text-lg font-black">Tải lên thời khóa biểu trong tuần của bạn</h2>
         <ImportPanel
           onImport={async (newItems, mode) => {
-            if (mode === "replace") await replaceSchedule(newItems);
-            else await addSchedule(newItems);
+            const locatedItems = await Promise.all(newItems.map(resolveLocation));
+            if (mode === "replace") await replaceSchedule(locatedItems);
+            else await addSchedule(locatedItems);
           }}
         />
       </section>
@@ -99,7 +160,7 @@ function SchedulePage() {
           <ScheduleGrid
             items={items}
             onRemove={(id) => void removeScheduleItem(id)}
-            onEdit={(item) => setEditing(item)}
+            onEdit={(item) => void openTrip(item)}
           />
         )}
       </section>
@@ -159,13 +220,17 @@ function SchedulePage() {
               className="h-11 rounded-2xl bg-secondary/40 font-semibold"
             />
           </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs font-bold uppercase">Địa điểm</Label>
-            <Input
+          <div className="sm:col-span-2 lg:col-span-1">
+            <AddressSearch
+              label="Địa điểm"
               value={form.location}
-              onChange={(e) => setForm({ ...form, location: e.target.value })}
+              onTextChange={(location) =>
+                setForm({ ...form, location, dest_lat: null, dest_lng: null })
+              }
+              onPick={(place) =>
+                setForm({ ...form, location: place.address, dest_lat: place.lat, dest_lng: place.lng })
+              }
               placeholder="Đại học Bách Khoa Hà Nội"
-              className="h-11 rounded-2xl bg-secondary/40 font-semibold"
             />
           </div>
           <Button type="submit" className="h-11 rounded-2xl font-bold sm:col-span-2 lg:col-span-3">
@@ -174,6 +239,78 @@ function SchedulePage() {
           </Button>
         </form>
       </section>
+
+      <Dialog open={!!selected} onOpenChange={(open) => !open && setSelected(null)}>
+        <DialogContent className="rounded-3xl">
+          <DialogHeader>
+            <DialogTitle className="font-black">Tổng quan hành trình</DialogTitle>
+          </DialogHeader>
+          {selected && (
+            <div className="space-y-4">
+              <div className="rounded-2xl bg-secondary p-4">
+                <p className="text-lg font-black text-primary">{selected.title}</p>
+                <p className="mt-2 flex items-start gap-2 text-sm font-bold">
+                  <MapPin className="mt-0.5 size-4 shrink-0 text-primary" />
+                  {selected.location ?? "Chưa có địa điểm"}
+                </p>
+                <p className="mt-2 flex items-center gap-2 text-sm font-bold">
+                  <Clock3 className="size-4 text-primary" />
+                  {WEEKDAYS[selected.weekday - 1]} • {selected.start_time}–{selected.end_time}
+                </p>
+              </div>
+              {tripLoading ? (
+                <p className="flex items-center gap-2 text-sm font-bold text-muted-foreground">
+                  <Loader2 className="size-4 animate-spin" /> Đang kiểm tra lưu lượng giao thông Hà Nội...
+                </p>
+              ) : tripOverview ? (
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-2xl border border-border p-3 text-center">
+                    <span className="block text-xl font-black text-primary">{tripOverview.distanceKm.toFixed(1)} km</span>
+                    <span className="text-xs font-bold text-muted-foreground">Quãng đường</span>
+                  </div>
+                  <div className="rounded-2xl border border-border p-3 text-center">
+                    <span className="block text-xl font-black text-primary">{tripOverview.minutes} phút</span>
+                    <span className="text-xs font-bold text-muted-foreground">Thời gian dự kiến</span>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm font-bold text-muted-foreground">Thêm địa điểm để tính hành trình.</p>
+              )}
+              <DialogFooter className="gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-11 rounded-2xl font-bold"
+                  onClick={() => {
+                    setEditing(selected);
+                    setSelected(null);
+                  }}
+                >
+                  <Pencil className="size-4" /> Chỉnh sửa
+                </Button>
+                <Button
+                  type="button"
+                  disabled={selected.dest_lat === null || selected.dest_lng === null}
+                  className="h-11 rounded-2xl font-bold"
+                  onClick={() =>
+                    void navigate({
+                      to: "/",
+                      search: {
+                        itemId: selected.id,
+                        destAddress: selected.location ?? selected.title,
+                        destLat: selected.dest_lat ?? undefined,
+                        destLng: selected.dest_lng ?? undefined,
+                      },
+                    })
+                  }
+                >
+                  <RouteIcon className="size-4" /> Xem chi tiết
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!editing} onOpenChange={(open) => !open && setEditing(null)}>
         <DialogContent className="rounded-3xl">
@@ -235,13 +372,22 @@ function SchedulePage() {
                   className="h-11 rounded-2xl bg-secondary/40 font-semibold"
                 />
               </div>
-              <div className="space-y-1.5 sm:col-span-2">
-                <Label className="text-xs font-bold uppercase">Địa điểm</Label>
-                <Input
+              <div className="sm:col-span-2">
+                <AddressSearch
+                  label="Địa điểm"
                   value={editing.location ?? ""}
-                  onChange={(e) => setEditing({ ...editing, location: e.target.value })}
+                  onTextChange={(location) =>
+                    setEditing({ ...editing, location, dest_lat: null, dest_lng: null })
+                  }
+                  onPick={(place) =>
+                    setEditing({
+                      ...editing,
+                      location: place.address,
+                      dest_lat: place.lat,
+                      dest_lng: place.lng,
+                    })
+                  }
                   placeholder="Đại học Bách Khoa Hà Nội"
-                  className="h-11 rounded-2xl bg-secondary/40 font-semibold"
                 />
               </div>
             </div>
@@ -264,7 +410,7 @@ function SchedulePage() {
               className="h-11 rounded-2xl font-bold"
               onClick={async () => {
                 if (!editing) return;
-                const current = editing;
+                const current = await resolveLocation(editing);
                 setEditing(null);
                 await updateScheduleItem(current.id, {
                   title: current.title.trim() || "Ca chưa đặt tên",
@@ -273,6 +419,8 @@ function SchedulePage() {
                   start_time: current.start_time,
                   end_time: current.end_time,
                   location: current.location?.trim() ? current.location.trim() : null,
+                  dest_lat: current.dest_lat,
+                  dest_lng: current.dest_lng,
                 });
                 toast.success("Đã lưu thay đổi");
               }}
