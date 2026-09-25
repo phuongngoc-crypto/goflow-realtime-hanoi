@@ -28,6 +28,9 @@ const dashboardSearchSchema = z.object({
   destAddress: z.string().optional(),
   destLat: z.coerce.number().optional(),
   destLng: z.coerce.number().optional(),
+  originAddress: z.string().optional(),
+  originLat: z.coerce.number().optional(),
+  originLng: z.coerce.number().optional(),
 });
 
 export const Route = createFileRoute("/")({
@@ -86,6 +89,17 @@ function Dashboard() {
   const [now, setNow] = useState(() => new Date());
   const homeTouched = useRef(false);
   const appliedSearch = useRef(false);
+  const [originOverride, setOriginOverride] = useState<
+    { address: string; lat: number; lng: number } | null
+  >(null);
+
+  useEffect(() => {
+    if (search.originLat === undefined || search.originLng === undefined) return;
+    const address = search.originAddress ?? "Điểm xuất phát";
+    homeTouched.current = true;
+    setHomeText(address);
+    setOriginOverride({ address, lat: search.originLat, lng: search.originLng });
+  }, [search.originAddress, search.originLat, search.originLng]);
 
   useEffect(() => {
     if (
@@ -180,7 +194,7 @@ function Dashboard() {
   useEffect(() => {
     let cancelled = false;
     setCalculating(true);
-    calculateRoute(home, dest, getTransport(transport))
+    calculateRoute(originOverride ?? home, dest, getTransport(transport))
       .then((result) => {
         if (!cancelled) setRoute(result);
       })
@@ -193,7 +207,7 @@ function Dashboard() {
     return () => {
       cancelled = true;
     };
-  }, [home.lat, home.lng, dest.lat, dest.lng, transport, home, dest]);
+  }, [home.lat, home.lng, dest.lat, dest.lng, transport, home, dest, originOverride]);
 
   const activeTransport = getTransport(transport);
   const totalMinutes = route ? route.minutes + activeTransport.buffer : null;
