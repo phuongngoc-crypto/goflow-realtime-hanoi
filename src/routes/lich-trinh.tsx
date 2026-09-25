@@ -60,6 +60,9 @@ function SchedulePage() {
   const [editing, setEditing] = useState<ScheduleItem | null>(null);
   const [tripOverview, setTripOverview] = useState<RouteResult | null>(null);
   const [tripLoading, setTripLoading] = useState(false);
+  const [origin, setOrigin] = useState<{ address: string; lat: number; lng: number } | null>(null);
+  const [originText, setOriginText] = useState("");
+  const [editOrigin, setEditOrigin] = useState(false);
   const [form, setForm] = useState({
     title: "",
     kind: "study" as "study" | "work",
@@ -82,7 +85,7 @@ function SchedulePage() {
     }
   }
 
-  async function openTrip(item: ScheduleItem) {
+  async function openTrip(item: ScheduleItem, from = origin ?? home) {
     setSelected(item);
     setEditing(null);
     setTripOverview(null);
@@ -103,7 +106,7 @@ function SchedulePage() {
       setSelected({ ...item, dest_lat: resolved.dest_lat, dest_lng: resolved.dest_lng });
       setTripOverview(
         await calculateRoute(
-          home,
+          from,
           { lat: resolved.dest_lat, lng: resolved.dest_lng },
           getTransport(transport),
         ),
@@ -258,6 +261,38 @@ function SchedulePage() {
                   {WEEKDAYS[selected.weekday - 1]} • {selected.start_time}–{selected.end_time}
                 </p>
               </div>
+              <div className="rounded-2xl border border-border p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-bold">
+                    <span className="text-muted-foreground">Xuất phát: </span>
+                    {(origin ?? home).address}
+                  </p>
+                  <Button type="button" variant="outline" size="sm" className="shrink-0 rounded-xl font-bold" onClick={() => setEditOrigin((v) => !v)}>
+                    <MapPin className="size-4" /> {editOrigin ? "Đóng" : "Điều chỉnh"}
+                  </Button>
+                </div>
+                {editOrigin && (
+                  <div className="mt-3 space-y-2">
+                    <AddressSearch
+                      label="Địa chỉ xuất phát"
+                      value={originText}
+                      showGps
+                      onTextChange={setOriginText}
+                      onPick={(place) => {
+                        setOrigin(place);
+                        setOriginText(place.address);
+                        setEditOrigin(false);
+                        void openTrip(selected, place);
+                      }}
+                    />
+                    {origin && (
+                      <Button type="button" variant="ghost" size="sm" className="font-bold" onClick={() => { setOrigin(null); setOriginText(""); setEditOrigin(false); void openTrip(selected, home); }}>
+                        Dùng lại nơi ở mặc định
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
               {tripLoading ? (
                 <p className="flex items-center gap-2 text-sm font-bold text-muted-foreground">
                   <Loader2 className="size-4 animate-spin" /> Đang kiểm tra lưu lượng giao thông Hà Nội...
@@ -300,6 +335,9 @@ function SchedulePage() {
                         destAddress: selected.location ?? selected.title,
                         destLat: selected.dest_lat ?? undefined,
                         destLng: selected.dest_lng ?? undefined,
+                        originAddress: origin?.address,
+                        originLat: origin?.lat,
+                        originLng: origin?.lng,
                       },
                     })
                   }
