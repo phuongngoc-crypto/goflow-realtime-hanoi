@@ -49,10 +49,13 @@ export type Database = {
           created_at: string
           dest_lat: number | null
           dest_lng: number | null
+          end_date: string | null
           end_time: string
           id: string
           kind: string
           location: string | null
+          note: string | null
+          start_date: string | null
           start_time: string
           title: string
           user_id: string
@@ -62,10 +65,13 @@ export type Database = {
           created_at?: string
           dest_lat?: number | null
           dest_lng?: number | null
+          end_date?: string | null
           end_time: string
           id?: string
           kind?: string
           location?: string | null
+          note?: string | null
+          start_date?: string | null
           start_time: string
           title: string
           user_id: string
@@ -75,10 +81,13 @@ export type Database = {
           created_at?: string
           dest_lat?: number | null
           dest_lng?: number | null
+          end_date?: string | null
           end_time?: string
           id?: string
           kind?: string
           location?: string | null
+          note?: string | null
+          start_date?: string | null
           start_time?: string
           title?: string
           user_id?: string

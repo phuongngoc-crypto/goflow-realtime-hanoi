@@ -516,7 +516,7 @@ function Dashboard() {
           </section>
         </div>
 
-        <section className="forest-panel overflow-hidden rounded-3xl p-2">
+        <section className="forest-panel self-start overflow-hidden rounded-3xl p-2 lg:sticky lg:top-20">
           <div className="flex items-center justify-between px-4 py-3">
             <h2 className="text-sm font-extrabold text-primary-foreground">Giao thông Hà Nội thời gian thực</h2>
             <span className="flex items-center gap-2 text-xs font-bold text-accent">

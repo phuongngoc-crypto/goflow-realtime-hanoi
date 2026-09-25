@@ -111,7 +111,7 @@ export default function MapPanel({ home, dest, points, focus, onPick }: Props) {
   return (
     <div className="relative h-full w-full overflow-hidden rounded-3xl">
       <div ref={containerRef} className="h-full w-full" />
-      <div className="pointer-events-none absolute bottom-3 left-3 z-[400] rounded-2xl border border-border bg-card/90 px-3 py-2 text-[11px] font-semibold shadow-soft backdrop-blur">
+      <div className="pointer-events-none absolute bottom-3 left-3 z-[400] rounded-2xl border border-border bg-card/90 px-3 py-2 text-[11px] font-semibold text-foreground shadow-soft backdrop-blur">
         🔴 Tắc nghẽn • 🟠 Ùn ứ • 🟢 Thông thoáng
       </div>
     </div>
