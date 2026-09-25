@@ -179,7 +179,21 @@ export type ScheduleItem = {
   location: string | null;
   dest_lat: number | null;
   dest_lng: number | null;
+  note?: string | null;
+  start_date?: string | null; // YYYY-MM-DD
+  end_date?: string | null;
 };
+
+function ymd(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+export function isActiveOn(item: ScheduleItem, date: Date) {
+  const day = ymd(date);
+  if (item.start_date && day < item.start_date) return false;
+  if (item.end_date && day > item.end_date) return false;
+  return true;
+}
 
 export function toMinutes(hhmm: string): number {
   const parts = hhmm.slice(0, 5).split(":").map(Number);
@@ -212,6 +226,9 @@ export function findNextItem(
       const start = toMinutes(item.start_time);
       const delta = offset * 1440 + start - nowMin;
       if (delta < -30) continue;
+      const day = new Date(now);
+      day.setDate(day.getDate() + offset);
+      if (!isActiveOn(item, day)) continue;
       if (delta < bestDelta) {
         const startsAt = new Date(now);
         startsAt.setDate(startsAt.getDate() + offset);

@@ -80,7 +80,7 @@ export function useGoflowData() {
 
     const { data: rows } = await supabase
       .from("schedule_items")
-      .select("id, title, kind, weekday, start_time, end_time, location, dest_lat, dest_lng")
+      .select("id, title, kind, weekday, start_time, end_time, location, dest_lat, dest_lng, note, start_date, end_date")
       .eq("user_id", uid)
       .order("weekday")
       .order("start_time");
@@ -97,6 +97,9 @@ export function useGoflowData() {
         location: r.location,
         dest_lat: r.dest_lat,
         dest_lng: r.dest_lng,
+        note: r.note,
+        start_date: r.start_date,
+        end_date: r.end_date,
       })),
     );
 

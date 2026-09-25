@@ -99,6 +99,7 @@ export default function ScheduleGrid({
                     >
                       <p className="font-extrabold">{item.start_time}</p>
                       <p className="truncate font-bold">{item.title}</p>
+                      {item.note && <p className="truncate italic opacity-80">📝 {item.note}</p>}
                       {item.location && (
                         <p className="truncate opacity-75">{item.location}</p>
                       )}

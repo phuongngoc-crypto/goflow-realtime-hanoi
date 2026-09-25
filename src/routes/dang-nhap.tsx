@@ -32,8 +32,20 @@ export const Route = createFileRoute("/dang-nhap")({
   component: AuthPage,
 });
 
-const DEMO_EMAIL = "demo.goflow@hanoi.vn";
-const DEMO_PASSWORD = "GoFlowDemo2026!";
+// Mỗi thiết bị/trình duyệt có một tài khoản demo riêng, lưu lại để lần sau vào đúng tài khoản đó.
+function getDemoCreds() {
+  const KEY = "goflow.demoAccount";
+  try {
+    const saved = localStorage.getItem(KEY);
+    if (saved) return JSON.parse(saved) as { email: string; password: string };
+  } catch {
+    /* ignore */
+  }
+  const id = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
+  const creds = { email: `demo.${id}@goflow.vn`, password: `Gf-${crypto.randomUUID()}` };
+  localStorage.setItem(KEY, JSON.stringify(creds));
+  return creds;
+}
 
 function AuthPage() {
   const navigate = useNavigate();
@@ -46,6 +58,7 @@ function AuthPage() {
 
   async function demoLogin() {
     setDemoBusy(true);
+    const { email: DEMO_EMAIL, password: DEMO_PASSWORD } = getDemoCreds();
     const signIn = await supabase.auth.signInWithPassword({
       email: DEMO_EMAIL,
       password: DEMO_PASSWORD,
