@@ -67,8 +67,12 @@ function SchedulePage() {
     title: "",
     kind: "study" as "study" | "work",
     weekday: 1,
+    weekdays: [1] as number[],
     start_time: "07:30",
     end_time: "09:10",
+    note: "",
+    start_date: "",
+    end_date: "",
     location: "",
     dest_lat: null as number | null,
     dest_lng: null as number | null,
@@ -121,18 +125,29 @@ function SchedulePage() {
   async function addManual(e: React.FormEvent) {
     e.preventDefault();
     if (!form.title.trim()) return;
-    const item = await resolveLocation<Omit<ScheduleItem, "id">>({
+    if (!form.weekdays.length) {
+      toast.error("Chọn ít nhất một thứ trong tuần");
+      return;
+    }
+    if (form.start_date && form.end_date && form.end_date < form.start_date) {
+      toast.error("Ngày kết thúc phải sau ngày bắt đầu");
+      return;
+    }
+    const base = await resolveLocation<Omit<ScheduleItem, "id">>({
       title: form.title.trim(),
       kind: form.kind,
-      weekday: form.weekday,
+      weekday: form.weekdays[0],
       start_time: form.start_time,
       end_time: form.end_time,
       location: form.location.trim() || null,
       dest_lat: form.dest_lat,
       dest_lng: form.dest_lng,
+      note: form.note.trim() || null,
+      start_date: form.start_date || null,
+      end_date: form.end_date || null,
     });
-    await addSchedule([item]);
-    setForm({ ...form, title: "", location: "", dest_lat: null, dest_lng: null });
+    await addSchedule(form.weekdays.map((weekday) => ({ ...base, weekday })));
+    setForm({ ...form, title: "", note: "", location: "", dest_lat: null, dest_lng: null });
     toast.success("Đã thêm vào lịch trình");
   }
 
@@ -192,18 +207,31 @@ function SchedulePage() {
             </select>
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs font-bold uppercase">Thứ</Label>
-            <select
-              value={form.weekday}
-              onChange={(e) => setForm({ ...form, weekday: Number(e.target.value) })}
-              className="h-11 w-full rounded-2xl border border-border bg-secondary/40 px-3 text-sm font-semibold"
-            >
-              {WEEKDAYS.map((d, i) => (
-                <option key={d} value={i + 1}>
-                  {d}
-                </option>
-              ))}
-            </select>
+            <Label className="text-xs font-bold uppercase">Lặp lại vào các thứ</Label>
+            <div className="flex flex-wrap gap-1.5">
+              {WEEKDAYS.map((d, i) => {
+                const on = form.weekdays.includes(i + 1);
+                return (
+                  <button
+                    key={d}
+                    type="button"
+                    onClick={() =>
+                      setForm({
+                        ...form,
+                        weekdays: on ? form.weekdays.filter((w) => w !== i + 1) : [...form.weekdays, i + 1].sort(),
+                      })
+                    }
+                    className={`rounded-xl border px-2.5 py-1.5 text-xs font-bold transition ${on ? "border-primary bg-primary text-primary-foreground" : "border-border bg-secondary/40"}`}
+                  >
+                    {d.replace("Thứ ", "T").replace("Chủ Nhật", "CN")}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="flex gap-2 pt-1 text-[11px] font-bold text-primary">
+              <button type="button" onClick={() => setForm({ ...form, weekdays: [1, 2, 3, 4, 5] })}>T2–T6</button>
+              <button type="button" onClick={() => setForm({ ...form, weekdays: [1, 2, 3, 4, 5, 6, 7] })}>Cả tuần</button>
+            </div>
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs font-bold uppercase">Bắt đầu</Label>
@@ -236,12 +264,33 @@ function SchedulePage() {
               placeholder="Đại học Bách Khoa Hà Nội"
             />
           </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-bold uppercase">Từ ngày (tuỳ chọn)</Label>
+            <Input type="date" value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} className="h-11 rounded-2xl bg-secondary/40 font-semibold" />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-bold uppercase">Đến ngày (tuỳ chọn)</Label>
+            <Input type="date" value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} className="h-11 rounded-2xl bg-secondary/40 font-semibold" />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-bold uppercase">Ghi chú</Label>
+            <Input value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} placeholder="Phòng D9-301, nộp BTVN chương 2..." className="h-11 rounded-2xl bg-secondary/40 font-semibold" />
+          </div>
           <Button type="submit" className="h-11 rounded-2xl font-bold sm:col-span-2 lg:col-span-3">
             <CalendarPlus className="size-4" />
             Thêm vào lịch trình
           </Button>
         </form>
       </section>
+
+      <BulkAddress
+        items={items}
+        onApply={async (ids, place) => {
+          for (const id of ids)
+            await updateScheduleItem(id, { location: place.address, dest_lat: place.lat, dest_lng: place.lng });
+          toast.success(`Đã cập nhật địa chỉ cho ${ids.length} ca`);
+        }}
+      />
 
       <Dialog open={!!selected} onOpenChange={(open) => !open && setSelected(null)}>
         <DialogContent className="rounded-3xl">
@@ -260,6 +309,12 @@ function SchedulePage() {
                   <Clock3 className="size-4 text-primary" />
                   {WEEKDAYS[selected.weekday - 1]} • {selected.start_time}–{selected.end_time}
                 </p>
+                {(selected.start_date || selected.end_date) && (
+                  <p className="mt-1 text-xs font-bold text-muted-foreground">
+                    Áp dụng: {selected.start_date ?? "…"} → {selected.end_date ?? "…"}
+                  </p>
+                )}
+                {selected.note && <p className="mt-2 text-sm font-semibold">📝 {selected.note}</p>}
               </div>
               <div className="rounded-2xl border border-border p-3">
                 <div className="flex items-center justify-between gap-2">
@@ -410,6 +465,18 @@ function SchedulePage() {
                   className="h-11 rounded-2xl bg-secondary/40 font-semibold"
                 />
               </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold uppercase">Từ ngày</Label>
+                <Input type="date" value={editing.start_date ?? ""} onChange={(e) => setEditing({ ...editing, start_date: e.target.value || null })} className="h-11 rounded-2xl bg-secondary/40 font-semibold" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold uppercase">Đến ngày</Label>
+                <Input type="date" value={editing.end_date ?? ""} onChange={(e) => setEditing({ ...editing, end_date: e.target.value || null })} className="h-11 rounded-2xl bg-secondary/40 font-semibold" />
+              </div>
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label className="text-xs font-bold uppercase">Ghi chú</Label>
+                <Input value={editing.note ?? ""} onChange={(e) => setEditing({ ...editing, note: e.target.value })} placeholder="Phòng học, BTVN..." className="h-11 rounded-2xl bg-secondary/40 font-semibold" />
+              </div>
               <div className="sm:col-span-2">
                 <AddressSearch
                   label="Địa điểm"
@@ -459,6 +526,9 @@ function SchedulePage() {
                   location: current.location?.trim() ? current.location.trim() : null,
                   dest_lat: current.dest_lat,
                   dest_lng: current.dest_lng,
+                  note: current.note?.trim() ? current.note.trim() : null,
+                  start_date: current.start_date || null,
+                  end_date: current.end_date || null,
                 });
                 toast.success("Đã lưu thay đổi");
               }}
@@ -469,5 +539,81 @@ function SchedulePage() {
         </DialogContent>
       </Dialog>
     </main>
+  );
+}
+
+function BulkAddress({
+  items,
+  onApply,
+}: {
+  items: ScheduleItem[];
+  onApply: (ids: string[], place: { address: string; lat: number; lng: number }) => Promise<void>;
+}) {
+  const [picked, setPicked] = useState<string[]>([]);
+  const [text, setText] = useState("");
+  const [place, setPlace] = useState<{ address: string; lat: number; lng: number } | null>(null);
+  const [busy, setBusy] = useState(false);
+  if (!items.length) return null;
+  const allOn = picked.length === items.length;
+  return (
+    <section className="glass-card p-5">
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <h2 className="text-base font-extrabold">Chỉnh địa chỉ hàng loạt</h2>
+        <button type="button" className="text-xs font-bold text-primary" onClick={() => setPicked(allOn ? [] : items.map((i) => i.id))}>
+          {allOn ? "Bỏ chọn tất cả" : "Chọn tất cả"}
+        </button>
+      </div>
+      <div className="mb-3 flex flex-wrap gap-1.5">
+        {items.map((i) => {
+          const on = picked.includes(i.id);
+          return (
+            <button
+              key={i.id}
+              type="button"
+              onClick={() => setPicked(on ? picked.filter((x) => x !== i.id) : [...picked, i.id])}
+              className={`rounded-xl border px-2.5 py-1.5 text-xs font-bold ${on ? "border-primary bg-primary text-primary-foreground" : "border-border bg-secondary/40"}`}
+            >
+              {i.title} · {WEEKDAYS[i.weekday - 1]} {i.start_time}
+            </button>
+          );
+        })}
+      </div>
+      <AddressSearch
+        label="Địa chỉ mới cho các ca đã chọn"
+        value={text}
+        onTextChange={(v) => {
+          setText(v);
+          setPlace(null);
+        }}
+        onPick={(p) => {
+          setText(p.address);
+          setPlace(p);
+        }}
+      />
+      <Button
+        type="button"
+        disabled={!picked.length || !text.trim() || busy}
+        className="mt-3 h-11 w-full rounded-2xl font-bold"
+        onClick={async () => {
+          setBusy(true);
+          let target = place;
+          if (!target) {
+            const found = (await searchAddress(text, 1).catch(() => []))[0];
+            target = found ? { address: text.trim(), lat: found.lat, lng: found.lng } : null;
+          }
+          if (!target) {
+            toast.error("Không tìm thấy tọa độ địa chỉ này");
+            setBusy(false);
+            return;
+          }
+          await onApply(picked, target);
+          setPicked([]);
+          setBusy(false);
+        }}
+      >
+        {busy ? <Loader2 className="size-4 animate-spin" /> : <MapPin className="size-4" />}
+        Áp dụng cho {picked.length} ca
+      </Button>
+    </section>
   );
 }
