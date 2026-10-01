@@ -16,7 +16,7 @@ export const THEMES: Theme[] = [
 const KEY = "goflow.theme";
 
 export function applyTheme(id: string) {
-  const t = THEMES.find((x) => x.id === id) ?? THEMES[0];
+  const t = THEMES.find((x) => x.id === id) ?? THEMES[0]!;
   const h = t.hue;
   const r = document.documentElement.style;
   if (t.id === "green") {

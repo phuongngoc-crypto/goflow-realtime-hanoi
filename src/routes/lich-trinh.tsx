@@ -136,7 +136,7 @@ function SchedulePage() {
     const base = await resolveLocation<Omit<ScheduleItem, "id">>({
       title: form.title.trim(),
       kind: form.kind,
-      weekday: form.weekdays[0],
+      weekday: form.weekdays[0] ?? 1,
       start_time: form.start_time,
       end_time: form.end_time,
       location: form.location.trim() || null,
