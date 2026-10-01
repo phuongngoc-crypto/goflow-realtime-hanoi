@@ -63,6 +63,8 @@ function SchedulePage() {
   const [origin, setOrigin] = useState<{ address: string; lat: number; lng: number } | null>(null);
   const [originText, setOriginText] = useState("");
   const [editOrigin, setEditOrigin] = useState(false);
+  const [bulkMode, setBulkMode] = useState(false);
+  const [bulkPicked, setBulkPicked] = useState<string[]>([]);
   const [form, setForm] = useState({
     title: "",
     kind: "study" as "study" | "work",
@@ -170,6 +172,45 @@ function SchedulePage() {
       </section>
 
       <section className="glass-card p-4 sm:p-5">
+        {!!items.length && (
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-base font-extrabold">Sơ đồ lịch trình</h2>
+              {bulkMode && (
+                <p className="text-xs font-bold text-muted-foreground">
+                  Bấm vào các ca trên sơ đồ để chọn · Đã chọn {bulkPicked.length} ca
+                </p>
+              )}
+            </div>
+            <div className="flex gap-2">
+              {bulkMode && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="rounded-xl font-bold"
+                  onClick={() =>
+                    setBulkPicked(bulkPicked.length === items.length ? [] : items.map((item) => item.id))
+                  }
+                >
+                  {bulkPicked.length === items.length ? "Bỏ chọn tất cả" : "Chọn tất cả"}
+                </Button>
+              )}
+              <Button
+                type="button"
+                variant={bulkMode ? "default" : "outline"}
+                size="sm"
+                className="rounded-xl font-bold"
+                onClick={() => {
+                  setBulkMode((current) => !current);
+                  setBulkPicked([]);
+                }}
+              >
+                {bulkMode ? "Xong" : "Chọn ca để đổi địa chỉ"}
+              </Button>
+            </div>
+          </div>
+        )}
         {loading ? (
           <div className="flex items-center justify-center gap-2 py-16 text-sm font-bold text-muted-foreground">
             <Loader2 className="size-4 animate-spin" /> Đang tải lịch trình...
@@ -179,9 +220,29 @@ function SchedulePage() {
             items={items}
             onRemove={(id) => void removeScheduleItem(id)}
             onEdit={(item) => void openTrip(item)}
+            selectionMode={bulkMode}
+            selectedIds={bulkPicked}
+            onToggleSelect={(id) =>
+              setBulkPicked((current) =>
+                current.includes(id) ? current.filter((pickedId) => pickedId !== id) : [...current, id],
+              )
+            }
           />
         )}
       </section>
+
+      {bulkMode && (
+        <BulkAddress
+          picked={bulkPicked}
+          onApply={async (place) => {
+            for (const id of bulkPicked)
+              await updateScheduleItem(id, { location: place.address, dest_lat: place.lat, dest_lng: place.lng });
+            toast.success(`Đã cập nhật địa chỉ cho ${bulkPicked.length} ca`);
+            setBulkPicked([]);
+            setBulkMode(false);
+          }}
+        />
+      )}
 
       <section className="glass-card p-5">
         <h2 className="mb-3 text-base font-extrabold">Thêm ca thủ công</h2>
@@ -282,15 +343,6 @@ function SchedulePage() {
           </Button>
         </form>
       </section>
-
-      <BulkAddress
-        items={items}
-        onApply={async (ids, place) => {
-          for (const id of ids)
-            await updateScheduleItem(id, { location: place.address, dest_lat: place.lat, dest_lng: place.lng });
-          toast.success(`Đã cập nhật địa chỉ cho ${ids.length} ca`);
-        }}
-      />
 
       <Dialog open={!!selected} onOpenChange={(open) => !open && setSelected(null)}>
         <DialogContent className="rounded-3xl">
@@ -543,40 +595,20 @@ function SchedulePage() {
 }
 
 function BulkAddress({
-  items,
+  picked,
   onApply,
 }: {
-  items: ScheduleItem[];
-  onApply: (ids: string[], place: { address: string; lat: number; lng: number }) => Promise<void>;
+  picked: string[];
+  onApply: (place: { address: string; lat: number; lng: number }) => Promise<void>;
 }) {
-  const [picked, setPicked] = useState<string[]>([]);
   const [text, setText] = useState("");
   const [place, setPlace] = useState<{ address: string; lat: number; lng: number } | null>(null);
   const [busy, setBusy] = useState(false);
-  if (!items.length) return null;
-  const allOn = picked.length === items.length;
   return (
     <section className="glass-card p-5">
-      <div className="mb-3 flex items-center justify-between gap-2">
+      <div className="mb-3">
         <h2 className="text-base font-extrabold">Chỉnh địa chỉ hàng loạt</h2>
-        <button type="button" className="text-xs font-bold text-primary" onClick={() => setPicked(allOn ? [] : items.map((i) => i.id))}>
-          {allOn ? "Bỏ chọn tất cả" : "Chọn tất cả"}
-        </button>
-      </div>
-      <div className="mb-3 flex flex-wrap gap-1.5">
-        {items.map((i) => {
-          const on = picked.includes(i.id);
-          return (
-            <button
-              key={i.id}
-              type="button"
-              onClick={() => setPicked(on ? picked.filter((x) => x !== i.id) : [...picked, i.id])}
-              className={`rounded-xl border px-2.5 py-1.5 text-xs font-bold ${on ? "border-primary bg-primary text-primary-foreground" : "border-border bg-secondary/40"}`}
-            >
-              {i.title} · {WEEKDAYS[i.weekday - 1]} {i.start_time}
-            </button>
-          );
-        })}
+        <p className="text-xs font-bold text-muted-foreground">Đã chọn {picked.length} ca trên sơ đồ</p>
       </div>
       <AddressSearch
         label="Địa chỉ mới cho các ca đã chọn"
@@ -606,8 +638,7 @@ function BulkAddress({
             setBusy(false);
             return;
           }
-          await onApply(picked, target);
-          setPicked([]);
+          await onApply(target);
           setBusy(false);
         }}
       >

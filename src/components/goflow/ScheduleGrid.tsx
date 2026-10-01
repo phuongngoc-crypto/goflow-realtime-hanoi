@@ -14,10 +14,16 @@ export default function ScheduleGrid({
   items,
   onRemove,
   onEdit,
+  selectionMode = false,
+  selectedIds = [],
+  onToggleSelect,
 }: {
   items: ScheduleItem[];
   onRemove?: (id: string) => void;
   onEdit?: (item: ScheduleItem) => void;
+  selectionMode?: boolean;
+  selectedIds?: string[];
+  onToggleSelect?: (id: string) => void;
 }) {
   const hours = Array.from(
     { length: GRID_END_HOUR - GRID_START_HOUR + 1 },
@@ -81,20 +87,31 @@ export default function ScheduleGrid({
                   const top = ((start - GRID_START_HOUR * 60) / 60) * HOUR_HEIGHT;
                   const height = ((end - start) / 60) * HOUR_HEIGHT;
                   const study = item.kind !== "work";
+                   const selected = selectedIds.includes(item.id);
                   return (
                     <div
                       key={item.id}
-                      role={onEdit ? "button" : undefined}
-                      tabIndex={onEdit ? 0 : undefined}
-                      onClick={onEdit ? () => onEdit(item) : undefined}
-                      title={onEdit ? "Bấm để sửa ca này" : undefined}
+                      role={onEdit || selectionMode ? "button" : undefined}
+                      tabIndex={onEdit || selectionMode ? 0 : undefined}
+                      onClick={() => {
+                        if (selectionMode) onToggleSelect?.(item.id);
+                        else onEdit?.(item);
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key !== "Enter" && event.key !== " ") return;
+                        event.preventDefault();
+                        if (selectionMode) onToggleSelect?.(item.id);
+                        else onEdit?.(item);
+                      }}
+                      title={selectionMode ? "Bấm để chọn ca này" : onEdit ? "Bấm để xem ca này" : undefined}
+                      aria-pressed={selectionMode ? selected : undefined}
                       className={`group absolute left-1 right-1 overflow-hidden rounded-xl border-2 px-1.5 py-1 text-left text-[11px] leading-tight shadow-soft ${
-                        onEdit ? "cursor-pointer hover:brightness-95" : ""
+                        onEdit || selectionMode ? "cursor-pointer hover:brightness-95" : ""
                       } ${
                         study
                           ? "border-primary bg-primary/15 text-primary"
                           : "border-accent-foreground bg-accent text-accent-foreground"
-                      }`}
+                      } ${selected ? "ring-4 ring-primary ring-offset-2 ring-offset-background" : ""}`}
                       style={{ top: Math.max(0, top), height }}
                     >
                       <p className="font-extrabold">{item.start_time}</p>
@@ -103,7 +120,12 @@ export default function ScheduleGrid({
                       {item.location && (
                         <p className="truncate opacity-75">{item.location}</p>
                       )}
-                      {onRemove && (
+                      {selectionMode && selected && (
+                        <span className="absolute right-1 top-1 flex size-5 items-center justify-center rounded-full bg-primary text-xs font-black text-primary-foreground">
+                          ✓
+                        </span>
+                      )}
+                      {onRemove && !selectionMode && (
                         <button
                           type="button"
                           onClick={(e) => {
