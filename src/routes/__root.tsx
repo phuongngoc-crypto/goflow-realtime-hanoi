@@ -1,4 +1,3 @@
-import ThemePicker from "@/components/goflow/ThemePicker";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
@@ -149,7 +148,6 @@ function Navbar() {
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
-          <ThemePicker />
           <Link
             to="/lich-trinh"
             className="rounded-2xl p-2 sm:hidden"
