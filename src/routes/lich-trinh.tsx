@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { CalendarPlus, Clock3, Loader2, MapPin, Pencil, Route as RouteIcon } from "lucide-react";
+import { CalendarPlus, Clock3, Loader2, MapPin, Pencil, Route as RouteIcon, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import ScheduleGrid from "@/components/goflow/ScheduleGrid";
 import ImportPanel from "@/components/goflow/ImportPanel";
@@ -206,7 +206,7 @@ function SchedulePage() {
                   setBulkPicked([]);
                 }}
               >
-                {bulkMode ? "Xong" : "Chọn ca để đổi địa chỉ"}
+                {bulkMode ? "Xong" : "Chỉnh sửa hàng loạt"}
               </Button>
             </div>
           </div>
@@ -232,12 +232,17 @@ function SchedulePage() {
       </section>
 
       {bulkMode && (
-        <BulkAddress
-          picked={bulkPicked}
-          onApply={async (place) => {
-            for (const id of bulkPicked)
-              await updateScheduleItem(id, { location: place.address, dest_lat: place.lat, dest_lng: place.lng });
-            toast.success(`Đã cập nhật địa chỉ cho ${bulkPicked.length} ca`);
+        <BulkEdit
+          pickedCount={bulkPicked.length}
+          onApply={async (patch) => {
+            for (const id of bulkPicked) await updateScheduleItem(id, patch);
+            toast.success(`Đã cập nhật ${bulkPicked.length} ca`);
+            setBulkPicked([]);
+            setBulkMode(false);
+          }}
+          onDelete={async () => {
+            for (const id of bulkPicked) await removeScheduleItem(id);
+            toast.success(`Đã xoá ${bulkPicked.length} ca`);
             setBulkPicked([]);
             setBulkMode(false);
           }}
