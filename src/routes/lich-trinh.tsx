@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { CalendarPlus, Clock3, Loader2, MapPin, Pencil, Route as RouteIcon } from "lucide-react";
+import { CalendarPlus, Clock3, Loader2, MapPin, Pencil, Route as RouteIcon, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import ScheduleGrid from "@/components/goflow/ScheduleGrid";
 import ImportPanel from "@/components/goflow/ImportPanel";
@@ -206,7 +206,7 @@ function SchedulePage() {
                   setBulkPicked([]);
                 }}
               >
-                {bulkMode ? "Xong" : "Chọn ca để đổi địa chỉ"}
+                {bulkMode ? "Xong" : "Chỉnh sửa hàng loạt"}
               </Button>
             </div>
           </div>
@@ -232,12 +232,17 @@ function SchedulePage() {
       </section>
 
       {bulkMode && (
-        <BulkAddress
-          picked={bulkPicked}
-          onApply={async (place) => {
-            for (const id of bulkPicked)
-              await updateScheduleItem(id, { location: place.address, dest_lat: place.lat, dest_lng: place.lng });
-            toast.success(`Đã cập nhật địa chỉ cho ${bulkPicked.length} ca`);
+        <BulkEdit
+          pickedCount={bulkPicked.length}
+          onApply={async (patch) => {
+            for (const id of bulkPicked) await updateScheduleItem(id, patch);
+            toast.success(`Đã cập nhật ${bulkPicked.length} ca`);
+            setBulkPicked([]);
+            setBulkMode(false);
+          }}
+          onDelete={async () => {
+            for (const id of bulkPicked) await removeScheduleItem(id);
+            toast.success(`Đã xoá ${bulkPicked.length} ca`);
             setBulkPicked([]);
             setBulkMode(false);
           }}
@@ -594,57 +599,239 @@ function SchedulePage() {
   );
 }
 
-function BulkAddress({
-  picked,
+type BulkPatch = Partial<Omit<ScheduleItem, "id">>;
+
+function BulkEdit({
+  pickedCount,
   onApply,
+  onDelete,
 }: {
-  picked: string[];
-  onApply: (place: { address: string; lat: number; lng: number }) => Promise<void>;
+  pickedCount: number;
+  onApply: (patch: BulkPatch) => Promise<void>;
+  onDelete: () => Promise<void>;
 }) {
-  const [text, setText] = useState("");
+  const [applyKind, setApplyKind] = useState(false);
+  const [kind, setKind] = useState<"study" | "work">("study");
+  const [applyStart, setApplyStart] = useState(false);
+  const [startTime, setStartTime] = useState("07:30");
+  const [applyEnd, setApplyEnd] = useState(false);
+  const [endTime, setEndTime] = useState("09:10");
+  const [applyNote, setApplyNote] = useState(false);
+  const [note, setNote] = useState("");
+  const [applyDates, setApplyDates] = useState(false);
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [applyPlace, setApplyPlace] = useState(false);
+  const [placeText, setPlaceText] = useState("");
   const [place, setPlace] = useState<{ address: string; lat: number; lng: number } | null>(null);
   const [busy, setBusy] = useState(false);
+
+  const nothingSelected =
+    !applyKind && !applyStart && !applyEnd && !applyNote && !applyDates && !applyPlace;
+
+  async function apply() {
+    if (!pickedCount) return;
+    if (applyStart && applyEnd && endTime <= startTime) {
+      toast.error("Giờ kết thúc phải sau giờ bắt đầu");
+      return;
+    }
+    if (applyDates && startDate && endDate && endDate < startDate) {
+      toast.error("Ngày kết thúc phải sau ngày bắt đầu");
+      return;
+    }
+    setBusy(true);
+    const patch: BulkPatch = {};
+    if (applyKind) patch.kind = kind;
+    if (applyStart) patch.start_time = startTime;
+    if (applyEnd) patch.end_time = endTime;
+    if (applyNote) patch.note = note.trim() || null;
+    if (applyDates) {
+      patch.start_date = startDate || null;
+      patch.end_date = endDate || null;
+    }
+    if (applyPlace) {
+      let target = place;
+      if (!target) {
+        const found = (await searchAddress(placeText, 1).catch(() => []))[0];
+        target = found ? { address: placeText.trim(), lat: found.lat, lng: found.lng } : null;
+      }
+      if (!target) {
+        toast.error("Không tìm thấy tọa độ địa chỉ này");
+        setBusy(false);
+        return;
+      }
+      patch.location = target.address;
+      patch.dest_lat = target.lat;
+      patch.dest_lng = target.lng;
+    }
+    await onApply(patch);
+    setBusy(false);
+  }
+
   return (
     <section className="glass-card p-5">
       <div className="mb-3">
-        <h2 className="text-base font-extrabold">Chỉnh địa chỉ hàng loạt</h2>
-        <p className="text-xs font-bold text-muted-foreground">Đã chọn {picked.length} ca trên sơ đồ</p>
+        <h2 className="text-base font-extrabold">Chỉnh sửa hàng loạt</h2>
+        <p className="text-xs font-bold text-muted-foreground">
+          Đã chọn {pickedCount} ca trên sơ đồ · chỉ các mục bạn tích chọn mới bị thay đổi
+        </p>
       </div>
-      <AddressSearch
-        label="Địa chỉ mới cho các ca đã chọn"
-        value={text}
-        onTextChange={(v) => {
-          setText(v);
-          setPlace(null);
-        }}
-        onPick={(p) => {
-          setText(p.address);
-          setPlace(p);
-        }}
-      />
-      <Button
-        type="button"
-        disabled={!picked.length || !text.trim() || busy}
-        className="mt-3 h-11 w-full rounded-2xl font-bold"
-        onClick={async () => {
-          setBusy(true);
-          let target = place;
-          if (!target) {
-            const found = (await searchAddress(text, 1).catch(() => []))[0];
-            target = found ? { address: text.trim(), lat: found.lat, lng: found.lng } : null;
-          }
-          if (!target) {
-            toast.error("Không tìm thấy tọa độ địa chỉ này");
-            setBusy(false);
-            return;
-          }
-          await onApply(target);
-          setBusy(false);
-        }}
-      >
-        {busy ? <Loader2 className="size-4 animate-spin" /> : <MapPin className="size-4" />}
-        Áp dụng cho {picked.length} ca
-      </Button>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <label className="flex items-center gap-2 text-xs font-bold uppercase">
+            <input
+              type="checkbox"
+              checked={applyKind}
+              onChange={(e) => setApplyKind(e.target.checked)}
+              className="size-4 accent-[hsl(var(--primary))]"
+            />
+            Loại ca
+          </label>
+          <select
+            value={kind}
+            onChange={(e) => setKind(e.target.value as "study" | "work")}
+            disabled={!applyKind}
+            className="h-11 w-full rounded-2xl border border-border bg-secondary/40 px-3 text-sm font-semibold disabled:opacity-50"
+          >
+            <option value="study">Ca học</option>
+            <option value="work">Ca làm thêm</option>
+          </select>
+        </div>
+        <div className="space-y-1.5">
+          <label className="flex items-center gap-2 text-xs font-bold uppercase">
+            <input
+              type="checkbox"
+              checked={applyNote}
+              onChange={(e) => setApplyNote(e.target.checked)}
+              className="size-4 accent-[hsl(var(--primary))]"
+            />
+            Ghi chú (phòng học, BTVN...)
+          </label>
+          <Input
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            disabled={!applyNote}
+            placeholder="Phòng D9-301, nộp BTVN chương 2..."
+            className="h-11 rounded-2xl bg-secondary/40 font-semibold"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <label className="flex items-center gap-2 text-xs font-bold uppercase">
+            <input
+              type="checkbox"
+              checked={applyStart}
+              onChange={(e) => setApplyStart(e.target.checked)}
+              className="size-4 accent-[hsl(var(--primary))]"
+            />
+            Giờ bắt đầu
+          </label>
+          <Input
+            type="time"
+            value={startTime}
+            onChange={(e) => setStartTime(e.target.value)}
+            disabled={!applyStart}
+            className="h-11 rounded-2xl bg-secondary/40 font-semibold"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <label className="flex items-center gap-2 text-xs font-bold uppercase">
+            <input
+              type="checkbox"
+              checked={applyEnd}
+              onChange={(e) => setApplyEnd(e.target.checked)}
+              className="size-4 accent-[hsl(var(--primary))]"
+            />
+            Giờ kết thúc
+          </label>
+          <Input
+            type="time"
+            value={endTime}
+            onChange={(e) => setEndTime(e.target.value)}
+            disabled={!applyEnd}
+            className="h-11 rounded-2xl bg-secondary/40 font-semibold"
+          />
+        </div>
+        <div className="space-y-1.5 sm:col-span-2">
+          <label className="flex items-center gap-2 text-xs font-bold uppercase">
+            <input
+              type="checkbox"
+              checked={applyDates}
+              onChange={(e) => setApplyDates(e.target.checked)}
+              className="size-4 accent-[hsl(var(--primary))]"
+            />
+            Khoảng ngày áp dụng (để trống = mọi tuần)
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            <Input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              disabled={!applyDates}
+              className="h-11 rounded-2xl bg-secondary/40 font-semibold"
+            />
+            <Input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              disabled={!applyDates}
+              className="h-11 rounded-2xl bg-secondary/40 font-semibold"
+            />
+          </div>
+        </div>
+        <div className="space-y-1.5 sm:col-span-2">
+          <label className="flex items-center gap-2 text-xs font-bold uppercase">
+            <input
+              type="checkbox"
+              checked={applyPlace}
+              onChange={(e) => {
+                setApplyPlace(e.target.checked);
+                if (!e.target.checked) setPlace(null);
+              }}
+              className="size-4 accent-[hsl(var(--primary))]"
+            />
+            Địa điểm mới cho các ca đã chọn
+          </label>
+          <div className={applyPlace ? "" : "pointer-events-none opacity-50"}>
+            <AddressSearch
+              label="Địa điểm"
+              value={placeText}
+              onTextChange={(v) => {
+                setPlaceText(v);
+                setPlace(null);
+              }}
+              onPick={(p) => {
+                setPlaceText(p.address);
+                setPlace(p);
+              }}
+              placeholder="Đại học Bách Khoa Hà Nội"
+            />
+          </div>
+        </div>
+      </div>
+      <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+        <Button
+          type="button"
+          disabled={!pickedCount || nothingSelected || busy}
+          className="h-11 flex-1 rounded-2xl font-bold"
+          onClick={() => void apply()}
+        >
+          {busy ? <Loader2 className="size-4 animate-spin" /> : <Pencil className="size-4" />}
+          Áp dụng cho {pickedCount} ca
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={!pickedCount || busy}
+          className="h-11 rounded-2xl font-bold text-destructive"
+          onClick={() => {
+            if (!window.confirm(`Xoá ${pickedCount} ca đã chọn khỏi lịch trình?`)) return;
+            void onDelete();
+          }}
+        >
+          <Trash2 className="size-4" />
+          Xoá {pickedCount} ca
+        </Button>
+      </div>
     </section>
   );
 }
